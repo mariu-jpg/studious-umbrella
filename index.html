@@ -512,11 +512,6 @@
         <input type="number" class="amount-input" id="expAmount" placeholder="0" inputmode="numeric">
       </div>
       <input type="text" class="text-input" id="expMemo" placeholder="メモ（任意）">
-      <div class="gas-status">
-        <div class="gdot" id="gasDot"></div>
-        <span id="gasStatusText">スプシ連携: 未設定</span>
-        <a href="#" onclick="document.getElementById('gasDetail').open=true;return false;" id="gasLink">設定する →</a>
-      </div>
       <button class="action-btn" id="expAddBtn" onclick="addExpense()">＋　支出を追加する</button>
     </div>
 
@@ -653,19 +648,37 @@
   const d  = JSON.parse(e.postData.contents);
   const sheetName = d.sheet || '家計簿';
   let sheet = ss.getSheetByName(sheetName);
+
+  // 削除リクエスト
+  if (d.action === 'delete') {
+    if (sheet) {
+      const rows = sheet.getDataRange().getValues();
+      for (let i = rows.length - 1; i >= 1; i--) {
+        if (String(rows[i][0]) === String(d.id)) {
+          sheet.deleteRow(i + 1);
+          break;
+        }
+      }
+    }
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 追加リクエスト
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
     if (sheetName === '家計簿') {
-      sheet.appendRow(['日付','曜日','記入者','カテゴリ','決済','金額','メモ']);
+      sheet.appendRow(['ID','日付','曜日','記入者','カテゴリ','決済','金額','メモ']);
     } else {
-      sheet.appendRow(['日付','曜日','記入者','種別','金額','メモ']);
+      sheet.appendRow(['ID','日付','曜日','記入者','種別','金額','メモ']);
     }
     sheet.setFrozenRows(1);
   }
   if (sheetName === '家計簿') {
-    sheet.appendRow([d.date,d.weekday,d.user,d.category,d.payment,d.amount,d.memo]);
+    sheet.appendRow([d.id,d.date,d.weekday,d.user,d.category,d.payment,d.amount,d.memo]);
   } else {
-    sheet.appendRow([d.date,d.weekday,d.user,d.savType,d.amount,d.memo]);
+    sheet.appendRow([d.id,d.date,d.weekday,d.user,d.savType,d.amount,d.memo]);
   }
   return ContentService
     .createTextOutput(JSON.stringify({ok:true}))
@@ -827,7 +840,8 @@ async function addExpense(){
   const now=new Date(), days=['日','月','火','水','木','金','土'];
   const cat=CATS.find(c=>c.id===selCat)||CATS[8];
   const pay=PAYS.find(p=>p.id===selPay)||PAYS[0];
-  expenses.push({id:Date.now(),amount:amt,category:selCat,payment:selPay,memo,user:currentExpUser,date:now.toISOString()});
+  const id=Date.now();
+  expenses.push({id,amount:amt,category:selCat,payment:selPay,memo,user:currentExpUser,date:now.toISOString()});
   localStorage.setItem('kakeibo_expenses',JSON.stringify(expenses));
   document.getElementById('expAmount').value='';
   document.getElementById('expMemo').value='';
@@ -837,7 +851,7 @@ async function addExpense(){
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
       await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'家計簿',date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
+        body:JSON.stringify({sheet:'家計簿',id,date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
           weekday:days[now.getDay()],user:names[currentExpUser],category:cat.lbl,payment:pay.lbl,amount:amt,memo:memo||''})});
       showToast(`¥${amt.toLocaleString()} 追加 & スプシ送信 ✓`);
     }catch{showToast('追加しました（スプシ送信エラー）');}
@@ -853,7 +867,8 @@ async function addSaving(){
   const signedAmt= selSavSign==='minus' ? -absAmt : absAmt;
   const now=new Date(), days=['日','月','火','水','木','金','土'];
   const st=SAV_TYPES.find(t=>t.id===selSavType)||SAV_TYPES[0];
-  savings.push({id:Date.now(),amount:signedAmt,savType:selSavType,memo,user:currentSavUser,date:now.toISOString()});
+  const id=Date.now();
+  savings.push({id,amount:signedAmt,savType:selSavType,memo,user:currentSavUser,date:now.toISOString()});
   localStorage.setItem('kakeibo_savings',JSON.stringify(savings));
   document.getElementById('savAmount').value='';
   document.getElementById('savMemo').value='';
@@ -863,24 +878,34 @@ async function addSaving(){
     btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
       await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'貯金',date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
+        body:JSON.stringify({sheet:'貯金',id,date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
           weekday:days[now.getDay()],user:names[currentSavUser],savType:st.lbl,amount:signedAmt,memo:memo||''})});
-      showToast(`¥${absAmt.toLocaleString()} を記録 & スプシ送信 ✓`);
+      showToast(`${selSavSign==='minus'?'−':'＋'}¥${absAmt.toLocaleString()} を記録 & スプシ送信 ✓`);
     }catch{showToast('記録しました（スプシ送信エラー）');}
     finally{btn.disabled=false;btn.innerHTML='＋　貯金を記録する';}
   }else{showToast(`${selSavSign==='minus'?'−':'＋'}¥${absAmt.toLocaleString()} を記録しました ✓`);}
 }
 
 // ── DELETE ──
-function deleteExpense(id){
+async function deleteExpense(id){
   expenses=expenses.filter(e=>e.id!==id);
   localStorage.setItem('kakeibo_expenses',JSON.stringify(expenses));
-  updateExpSummary();renderExpEntries();renderBreakdown();showToast('削除しました');
+  updateExpSummary();renderExpEntries();renderBreakdown();
+  if(gasUrl){
+    try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete',sheet:'家計簿',id})});}catch{}
+  }
+  showToast('削除しました');
 }
-function deleteSaving(id){
+async function deleteSaving(id){
   savings=savings.filter(s=>s.id!==id);
   localStorage.setItem('kakeibo_savings',JSON.stringify(savings));
-  updateSavSummary();renderSavEntries();renderSavBreakdown();showToast('削除しました');
+  updateSavSummary();renderSavEntries();renderSavBreakdown();
+  if(gasUrl){
+    try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete',sheet:'貯金',id})});}catch{}
+  }
+  showToast('削除しました');
 }
 
 // ── EXP SUMMARY ──
@@ -1016,24 +1041,33 @@ function renderBreakdown(){
 
 // ── BREAKDOWN (savings) ──
 function renderSavBreakdown(){
-  const pos=savings.filter(e=>e.amount>0);
-  const total=pos.reduce((s,e)=>s+e.amount,0);
-  if(!total){document.getElementById('savBreakdown').innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:10px 0">データなし</p>';return;}
+  // 現金・口座それぞれの純額（積み立て - 引き出し）を表示
   const ct={};
-  pos.forEach(e=>{ct[e.savType]=(ct[e.savType]||0)+e.amount;});
+  savings.forEach(e=>{
+    ct[e.savType]=(ct[e.savType]||0)+e.amount;
+  });
+  const hasData=Object.values(ct).some(v=>v!==0);
+  if(!savings.length||!hasData){
+    document.getElementById('savBreakdown').innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:10px 0">データなし</p>';
+    return;
+  }
+  const grossPos=savings.filter(e=>e.amount>0).reduce((s,e)=>s+e.amount,0)||1;
   const colors={cash:'#7ab840',account:'#4e8878'};
   document.getElementById('savBreakdown').innerHTML=
-    Object.entries(ct).sort((a,b)=>b[1]-a[1]).map(([id,amt])=>{
+    Object.entries(ct).map(([id,net])=>{
       const t=SAV_TYPES.find(x=>x.id===id)||SAV_TYPES[0];
-      const pct=(amt/total*100).toFixed(0);
       const col=colors[id]||'#a0a890';
+      const isNeg=net<0;
+      // barは積み立て総額に対する比率（引き出し超過は0）
+      const posForType=savings.filter(e=>e.savType===id&&e.amount>0).reduce((s,e)=>s+e.amount,0);
+      const pct=Math.max(0,Math.round(posForType/grossPos*100));
       return `<div class="bd-item">
         <div class="bd-dot" style="background:${col}"></div>
         <div class="bd-info">
-          <div class="bd-name">${t.lbl} <span style="color:var(--ink3);font-size:0.63rem">${pct}%</span></div>
+          <div class="bd-name">${t.lbl} <span style="color:var(--ink3);font-size:0.63rem">純額</span></div>
           <div class="bd-bar"><div class="bd-fill" style="width:${pct}%;background:${col}"></div></div>
         </div>
-        <div class="bd-amt">¥${amt.toLocaleString()}</div>
+        <div class="bd-amt${isNeg?' negative':''}">${isNeg?'−':''}¥${Math.abs(net).toLocaleString()}</div>
       </div>`;
     }).join('');
 }
@@ -1065,11 +1099,8 @@ function saveGasUrl(){
 }
 function updateGasUI(){
   const ok=!!gasUrl;
-  document.getElementById('gasDot').className ='gdot'+(ok?' ok':'');
   document.getElementById('hdrDot').className ='gdot'+(ok?' ok':'');
-  document.getElementById('gasStatusText').textContent=ok?'スプシ連携: 接続済み ✓':'スプシ連携: 未設定';
-  document.getElementById('hdrLabel').textContent     =ok?'スプシ連携中':'スプシ未連携';
-  document.getElementById('gasLink').textContent      =ok?'変更 →':'設定する →';
+  document.getElementById('hdrLabel').textContent=ok?'スプシ連携中':'スプシ未連携';
 }
 
 function showToast(msg){
