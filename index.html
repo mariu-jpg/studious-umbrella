@@ -744,7 +744,9 @@ let currentSavMonth=new Date(); currentSavMonth.setDate(1);
 let expenses=JSON.parse(localStorage.getItem('kakeibo_expenses')||'[]');
 let savings =JSON.parse(localStorage.getItem('kakeibo_savings') ||'[]');
 let names   =JSON.parse(localStorage.getItem('kakeibo_names')   ||'{"A":"あなた","B":"パートナー"}');
-let gasUrl  =localStorage.getItem('kakeibo_gas_url')||'';
+// ▼ GAS URLをここに直接貼り付けると全デバイスで共有されます
+const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzwacewD5YvNZiMe-boqJafORUHk8mrtE1t9gp3jbyAlECmzSzmDhgIl1qoPrssEgXX6w/exec';
+let gasUrl = localStorage.getItem('kakeibo_gas_url') || GAS_URL_DEFAULT;
 let selCat='food', selPay='cash', selSavType='cash', selSavSign='plus';
 
 // ── INIT ──
