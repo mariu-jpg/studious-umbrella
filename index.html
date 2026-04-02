@@ -6,463 +6,224 @@
 <title>ふたりの家計簿</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    /* ── Base ── */
-    --bg:      #f4f5ef;
-    --surface: #ffffff;
-    --sf2:     #eceee6;
-    --border:  rgba(70,80,50,0.1);
-    --shadow:  0 2px 18px rgba(60,70,40,0.07);
+:root {
+  --bg:      #f4f5ef;
+  --surface: #ffffff;
+  --sf2:     #eceee6;
+  --border:  rgba(70,80,50,0.1);
+  --shadow:  0 2px 18px rgba(60,70,40,0.07);
+  --ink:  #272b1e; --ink2: #686c58; --ink3: #a8ac98;
+  --accent:    #6e9632; --accent-lt: #b8d870;
+  --accent-bg: #eaf4d0; --accent-dk: #456018;
+  --sel-bg: #d8eca0; --sel-bd: #9ec848; --sel-tx: #385010;
+  --a-bg: #fce8ee; --a-bd: #e0849e; --a-tx: #8c2848;
+  --b-bg: #fdf0e0; --b-bd: #e0a850; --b-tx: #7a4c10;
+  --sav: #4e8878; --sav-bg: #e0f0ec; --sav-bd: #7ebcac; --sav-tx: #1e5848;
+  --r-card: 20px; --r-pill: 50px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(70,80,50,0.03)1px,transparent 1px),linear-gradient(90deg,rgba(70,80,50,0.03)1px,transparent 1px);background-size:32px 32px;pointer-events:none;z-index:0}
 
-    --ink:   #272b1e;
-    --ink2:  #686c58;
-    --ink3:  #a8ac98;
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(244,245,239,0.93);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);padding:0 16px}
+.header-inner{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:flex-end;height:48px}
+.gas-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:var(--r-pill);background:var(--sf2);border:1px solid var(--border);font-size:0.68rem;color:var(--ink2);font-family:'Outfit',sans-serif}
+.gas-chip .gdot{width:6px;height:6px;border-radius:50%;background:var(--ink3);flex-shrink:0}
+.gas-chip .gdot.ok{background:#72b840}
 
-    /* ── Page accent: yellow-green (distinct from user A) ── */
-    --accent:    #6e9632;
-    --accent-lt: #b8d870;
-    --accent-bg: #eaf4d0;
-    --accent-dk: #456018;
-    --sel-bg:    #d8eca0;
-    --sel-bd:    #9ec848;
-    --sel-tx:    #385010;
+/* MAIN */
+main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-index:1;overflow:hidden}
 
-    /* ── User A: Rose-pink (UD safe, distinct from green) ── */
-    --a-bg: #fce8ee; --a-bd: #e0849e; --a-tx: #8c2848;
+/* TABS */
+.tab-bar{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:20px;background:var(--sf2);border-radius:14px;padding:4px;border:1px solid var(--border)}
+.tab-btn{padding:9px;border-radius:11px;border:none;background:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:0.78rem;font-weight:500;color:var(--ink3);transition:all 0.2s}
+.tab-btn.active{background:var(--surface);color:var(--accent-dk);box-shadow:0 1px 6px rgba(60,70,40,0.1);font-weight:600}
 
-    /* ── User B: Amber-orange (UD safe: green-blind distinguishable from pink) ── */
-    --b-bg: #fdf0e0; --b-bd: #e0a850; --b-tx: #7a4c10;
+/* MONTH NAV */
+.month-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px}
+.month-nav button{background:var(--surface);border:1px solid var(--border);cursor:pointer;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1rem;box-shadow:var(--shadow);transition:all 0.18s}
+.month-nav button:hover{color:var(--ink);transform:scale(1.08)}
+.month-title{font-family:'Outfit',sans-serif;font-size:1.35rem;font-weight:600;color:var(--ink);min-width:110px;text-align:center}
 
-    /* ── Savings ── */
-    --sav:    #4e8878;
-    --sav-bg: #e0f0ec;
-    --sav-bd: #7ebcac;
-    --sav-tx: #1e5848;
+.sec-label{font-family:'Outfit',sans-serif;font-size:0.65rem;font-weight:600;color:var(--ink3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px}
+.card{background:var(--surface);border-radius:var(--r-card);padding:20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;width:100%;overflow:hidden}
 
-    --r-card: 20px;
-    --r-pill: 50px;
-  }
+/* USER SELECTOR */
+.user-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.user-sel-btn{padding:10px 8px;border-radius:13px;border:1.5px solid var(--border);background:var(--sf2);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:0.8rem;font-weight:500;display:flex;align-items:center;justify-content:center;gap:7px;transition:all 0.18s;color:var(--ink2);min-width:0;overflow:hidden}
+.user-sel-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-sel-btn .av{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:white}
+.user-sel-btn.ua .av{background:var(--a-bd)} .user-sel-btn.ub .av{background:var(--b-bd)}
+.user-sel-btn.ua.active{background:var(--a-bg);border-color:var(--a-bd);color:var(--a-tx)}
+.user-sel-btn.ub.active{background:var(--b-bg);border-color:var(--b-bd);color:var(--b-tx)}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    font-family: 'Noto Sans JP', sans-serif;
-    background: var(--bg); color: var(--ink);
-    min-height: 100vh; overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background-image:
-      linear-gradient(rgba(70,80,50,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(70,80,50,0.03) 1px, transparent 1px);
-    background-size: 32px 32px;
-    pointer-events: none; z-index: 0;
-  }
+/* CATEGORY GRID */
+.cat-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;width:100%}
+.cat-pill{padding:7px 13px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--sf2);font-size:0.76rem;cursor:pointer;transition:all 0.18s;white-space:nowrap;color:var(--ink2);font-family:'Noto Sans JP',sans-serif;flex-shrink:0}
+.cat-pill:hover{border-color:var(--accent);color:var(--ink)}
+.cat-pill.selected{background:var(--sel-bg);border-color:var(--sel-bd);color:var(--sel-tx);font-weight:600}
 
-  /* ── HEADER ── */
-  header {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(244,245,239,0.93);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--border); padding: 0 16px;
-  }
-  .header-inner {
-    max-width: 560px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: flex-end; height: 48px;
-  }
-  .gas-chip {
-    display: flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: var(--r-pill);
-    background: var(--sf2); border: 1px solid var(--border);
-    font-size: 0.68rem; color: var(--ink2); font-family: 'Outfit', sans-serif;
-  }
-  .gas-chip .gdot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink3); flex-shrink: 0; }
-  .gas-chip .gdot.ok { background: #72b840; }
+/* ROW BUTTONS */
+.row-btns{display:flex;gap:7px;margin-bottom:12px}
+.row-btn{flex:1;min-width:0;padding:9px 4px;border-radius:12px;border:1.5px solid var(--border);background:var(--sf2);font-family:'Noto Sans JP',sans-serif;font-size:0.74rem;cursor:pointer;transition:all 0.18s;color:var(--ink2);text-align:center}
+.row-btn:hover{border-color:var(--accent);color:var(--ink)}
+.row-btn.selected{background:var(--sel-bg);border-color:var(--sel-bd);color:var(--sel-tx);font-weight:600}
+.row-btn.sign-minus.selected{background:var(--sav-bg);border-color:var(--sav-bd);color:var(--sav-tx)}
 
-  /* ── MAIN ── */
-  main {
-    max-width: 560px; margin: 0 auto;
-    padding: 20px 16px 80px; position: relative; z-index: 1; overflow: hidden;
-  }
+/* AMOUNT */
+.amount-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.yen{font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:300;color:var(--ink3);line-height:1}
+.amount-input{flex:1;min-width:0;width:100%;font-family:'Outfit',sans-serif;font-size:2rem;font-weight:500;border:none;outline:none;background:none;color:var(--ink)}
+.amount-input::placeholder{color:var(--ink3)}
+.sign-indicator{font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:500;line-height:1;min-width:18px;transition:color 0.18s}
+.sign-indicator.plus{color:var(--accent)} .sign-indicator.minus{color:var(--sav)}
+.text-input{width:100%;padding:10px 13px;border-radius:11px;border:1.5px solid var(--border);background:var(--sf2);font-family:'Noto Sans JP',sans-serif;font-size:0.84rem;color:var(--ink);outline:none;transition:border-color 0.18s;box-sizing:border-box;margin-bottom:12px}
+.text-input:focus{border-color:var(--accent)}
+.text-input::placeholder{color:var(--ink3)}
 
-  /* ── TABS ── */
-  .tab-bar {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 5px; margin-bottom: 20px;
-    background: var(--sf2); border-radius: 14px; padding: 4px;
-    border: 1px solid var(--border);
-  }
-  .tab-btn {
-    padding: 9px; border-radius: 11px; border: none; background: none;
-    cursor: pointer; font-family: 'Outfit', sans-serif;
-    font-size: 0.82rem; font-weight: 500; color: var(--ink3); transition: all 0.2s;
-  }
-  .tab-btn.active {
-    background: var(--surface); color: var(--accent-dk);
-    box-shadow: 0 1px 6px rgba(60,70,40,0.1); font-weight: 600;
-  }
+/* ACTION BUTTON */
+.action-btn{width:100%;padding:14px;border-radius:14px;border:none;background:var(--accent);color:white;font-family:'Outfit',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;transition:all 0.22s;letter-spacing:0.03em;overflow:hidden}
+.action-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(90,130,40,0.28)}
+.action-btn:active{transform:scale(0.98)}
+.action-btn:disabled{opacity:0.5;cursor:default;transform:none!important;box-shadow:none}
+.action-btn.sav-btn{background:var(--sav)}
+.action-btn.sav-btn:hover{box-shadow:0 6px 20px rgba(60,110,90,0.28)}
+.action-btn.export-btn{background:var(--sf2);color:var(--accent-dk);border:1.5px solid var(--sel-bd);box-shadow:none}
+.action-btn.export-btn:hover{background:var(--sel-bg);box-shadow:none}
 
-  /* ── MONTH NAV ── */
-  .month-nav {
-    display: flex; align-items: center; justify-content: center;
-    gap: 16px; margin-bottom: 20px;
-  }
-  .month-nav button {
-    background: var(--surface); border: 1px solid var(--border); cursor: pointer;
-    width: 34px; height: 34px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    color: var(--ink2); font-size: 1rem; box-shadow: var(--shadow); transition: all 0.18s;
-  }
-  .month-nav button:hover { color: var(--ink); transform: scale(1.08); }
-  .month-title {
-    font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 600;
-    color: var(--ink); min-width: 110px; text-align: center;
-  }
+/* BUDGET BLOCK */
+.budget-block{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;width:100%;position:relative}
+.budget-block::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent-lt))}
+.budget-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px 14px}
+.budget-left{flex:1;min-width:0}
+.b-lbl{font-size:0.67rem;color:var(--ink3);font-weight:500;letter-spacing:0.04em;margin-bottom:4px}
+.b-num{font-family:'Outfit',sans-serif;font-size:1.6rem;font-weight:600;color:var(--ink);letter-spacing:-0.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b-sub{font-size:0.66rem;color:var(--ink3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.budget-right{text-align:right;flex-shrink:0}
+.budget-right .b-lbl{text-align:right}
+.budget-right input{width:108px;padding:5px 8px;border-radius:9px;border:1.5px solid var(--border);background:var(--sf2);font-family:'Outfit',sans-serif;font-size:1rem;font-weight:600;color:var(--ink);outline:none;text-align:right;display:block}
+.budget-right input:focus{border-color:var(--accent)}
+.remain-row{padding:0 20px 16px;display:flex;flex-direction:column;gap:6px}
+.remain-labels{display:flex;justify-content:space-between;align-items:baseline}
+.remain-lbl{font-size:0.66rem;color:var(--ink3)}
+.remain-num{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:600;color:var(--ink)}
+.remain-num.over{color:#c04040}
+.prog-bar{height:6px;border-radius:10px;background:var(--sf2);overflow:hidden;width:100%}
+.prog-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent-lt));transition:width 0.5s ease}
+.prog-fill.over{background:linear-gradient(90deg,#e05050,#f09090)}
+.user-split{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border)}
+.split-cell{padding:12px 20px;min-width:0}
+.split-cell:first-child{border-right:1px solid var(--border)}
+.split-cell.ua-cell{border-top:2px solid var(--a-bd)} .split-cell.ub-cell{border-top:2px solid var(--b-bd)}
+.split-cell .b-lbl{margin-bottom:3px}
+.split-num{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-sub{font-size:0.64rem;color:var(--ink3);margin-top:1px}
 
-  .sec-label {
-    font-family: 'Outfit', sans-serif; font-size: 0.65rem; font-weight: 600;
-    color: var(--ink3); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px;
-  }
+/* SAVINGS BLOCK */
+.sav-block{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px;overflow:hidden;width:100%;position:relative}
+.sav-block::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--sav),var(--sav-bd))}
+.sav-top{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.sav-col{flex:1;padding:16px;min-width:0}
+.sav-col+.sav-col{border-left:1px solid var(--border)}
+.sav-col .s-lbl{font-size:0.64rem;color:var(--ink3);letter-spacing:0.04em;margin-bottom:4px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sav-col .s-num{font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sav-col .s-num.negative{color:var(--sav)}
+.sav-col .s-sub{font-size:0.62rem;color:var(--ink3);margin-top:2px}
+.sav-user-split{display:grid;grid-template-columns:1fr 1fr}
+.sav-split-cell{padding:10px 16px;min-width:0}
+.sav-split-cell:first-child{border-right:1px solid var(--border)}
+.sav-split-cell.ua-cell{border-top:2px solid var(--a-bd)} .sav-split-cell.ub-cell{border-top:2px solid var(--b-bd)}
 
-  .card {
-    background: var(--surface); border-radius: var(--r-card);
-    padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 16px; width: 100%; overflow: hidden;
-  }
+/* BREAKDOWN */
+.bd-item{display:flex;align-items:center;gap:10px;margin-bottom:11px;min-width:0}
+.bd-item:last-child{margin-bottom:0}
+.bd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bd-info{flex:1;min-width:0}
+.bd-name{font-size:0.78rem;font-weight:500;color:var(--ink);margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bd-bar{height:4px;border-radius:10px;background:var(--sf2);overflow:hidden}
+.bd-fill{height:100%;border-radius:10px;transition:width 0.55s ease}
+.bd-amt{font-family:'Outfit',sans-serif;font-size:0.9rem;font-weight:600;color:var(--ink);flex-shrink:0;white-space:nowrap}
+.bd-amt.negative{color:var(--sav)}
 
-  /* ── USER SELECTOR ── */
-  .user-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .user-sel-btn {
-    padding: 10px 8px; border-radius: 13px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    cursor: pointer; font-family: 'Noto Sans JP', sans-serif;
-    font-size: 0.8rem; font-weight: 500;
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    transition: all 0.18s; color: var(--ink2); min-width: 0; overflow: hidden;
-  }
-  .user-sel-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .user-sel-btn .av {
-    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.6rem; font-weight: 700; color: white;
-  }
-  .user-sel-btn.ua .av { background: var(--a-bd); }
-  .user-sel-btn.ub .av { background: var(--b-bd); }
-  .user-sel-btn.ua.active { background: var(--a-bg); border-color: var(--a-bd); color: var(--a-tx); }
-  .user-sel-btn.ub.active { background: var(--b-bg); border-color: var(--b-bd); color: var(--b-tx); }
+/* ENTRY LIST */
+.date-grp{margin-bottom:16px}
+.date-lbl{font-size:0.65rem;color:var(--ink3);font-weight:700;letter-spacing:0.09em;margin-bottom:7px;padding-left:2px}
+.entry-item{background:var(--surface);border-radius:14px;padding:12px;margin-bottom:7px;display:flex;align-items:center;gap:9px;box-shadow:var(--shadow);border:1px solid var(--border);transition:transform 0.18s;animation:slideIn 0.26s ease;width:100%;overflow:hidden;min-width:0}
+.entry-item:hover{transform:translateX(3px)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.e-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.e-info{flex:1;min-width:0}
+.e-name{font-size:0.8rem;font-weight:500;color:var(--ink);margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.e-meta{font-size:0.65rem;color:var(--ink3);display:flex;gap:5px;align-items:center;overflow:hidden}
+.e-meta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.e-tag{font-size:0.6rem;padding:2px 6px;border-radius:50px;background:var(--sf2);color:var(--ink2);flex-shrink:0}
+.e-right{text-align:right;flex-shrink:0}
+.e-amount{font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:600;color:var(--ink);white-space:nowrap}
+.e-amount.negative{color:var(--sav)}
+.e-utag{font-size:0.6rem;padding:2px 7px;border-radius:50px;margin-top:3px;display:inline-block;white-space:nowrap}
+.e-utag.ua{background:var(--a-bg);color:var(--a-tx)} .e-utag.ub{background:var(--b-bg);color:var(--b-tx)}
+.e-del{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.78rem;padding:4px 5px;border-radius:7px;transition:all 0.18s;flex-shrink:0}
+.e-del:hover{color:#c04060;background:#fce8ee}
 
-  /* ── CATEGORY GRID (no scroll, full wrap) ── */
-  .cat-grid {
-    display: flex; flex-wrap: wrap; gap: 7px;
-    margin-bottom: 14px; width: 100%;
-  }
-  .cat-pill {
-    padding: 7px 13px; border-radius: var(--r-pill);
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-size: 0.76rem; cursor: pointer; transition: all 0.18s;
-    white-space: nowrap; color: var(--ink2); font-family: 'Noto Sans JP', sans-serif;
-    /* grow to fill but not force full width */
-    flex-shrink: 0;
-  }
-  .cat-pill:hover { border-color: var(--accent); color: var(--ink); }
-  .cat-pill.selected {
-    background: var(--sel-bg); border-color: var(--sel-bd);
-    color: var(--sel-tx); font-weight: 600;
-  }
+/* ════ 収支 TAB ════ */
+/* filter row */
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-select{flex:1;min-width:100px;padding:8px 10px;border-radius:11px;border:1.5px solid var(--border);background:var(--sf2);font-family:'Noto Sans JP',sans-serif;font-size:0.78rem;color:var(--ink);outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a8ac98'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px}
+.filter-select:focus{border-color:var(--accent)}
 
-  /* ── ROW BUTTONS (payment / sav type / sign) ── */
-  .row-btns { display: flex; gap: 7px; margin-bottom: 12px; }
-  .row-btn {
-    flex: 1; min-width: 0; padding: 9px 4px; border-radius: 12px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-family: 'Noto Sans JP', sans-serif; font-size: 0.74rem;
-    cursor: pointer; transition: all 0.18s; color: var(--ink2); text-align: center;
-  }
-  .row-btn:hover { border-color: var(--accent); color: var(--ink); }
-  .row-btn.selected { background: var(--sel-bg); border-color: var(--sel-bd); color: var(--sel-tx); font-weight: 600; }
-  /* minus selected: teal tone */
-  .row-btn.sign-minus.selected { background: var(--sav-bg); border-color: var(--sav-bd); color: var(--sav-tx); }
+/* summary row of 3 */
+.rep-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px}
+.rep-card{background:var(--surface);border-radius:16px;padding:14px 12px;box-shadow:var(--shadow);border:1px solid var(--border);min-width:0;position:relative;overflow:hidden}
+.rep-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.rep-card.rc-total::before{background:linear-gradient(90deg,var(--accent),var(--accent-lt))}
+.rep-card.rc-a::before{background:linear-gradient(90deg,var(--a-bd),#f0b0c0)}
+.rep-card.rc-b::before{background:linear-gradient(90deg,var(--b-bd),#f0cc80)}
+.rep-card .r-lbl{font-size:0.6rem;color:var(--ink3);font-weight:500;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-card .r-num{font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rep-card .r-sub{font-size:0.58rem;color:var(--ink3);margin-top:2px}
 
-  /* ── AMOUNT ── */
-  .amount-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .yen { font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 300; color: var(--ink3); line-height: 1; }
-  .amount-input {
-    flex: 1; min-width: 0; width: 100%;
-    font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 500;
-    border: none; outline: none; background: none; color: var(--ink);
-  }
-  .amount-input::placeholder { color: var(--ink3); }
-  /* sign indicator next to yen */
-  .sign-indicator {
-    font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 500;
-    line-height: 1; min-width: 18px; transition: color 0.18s;
-  }
-  .sign-indicator.plus  { color: var(--accent); }
-  .sign-indicator.minus { color: var(--sav); }
+/* bar chart */
+.bar-chart{width:100%;overflow:hidden}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-width:0}
+.bar-row:last-child{margin-bottom:0}
+.bar-lbl{font-size:0.72rem;color:var(--ink2);width:72px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{flex:1;height:18px;background:var(--sf2);border-radius:6px;overflow:hidden;min-width:0}
+.bar-fill{height:100%;border-radius:6px;transition:width 0.55s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:5px}
+.bar-val{font-family:'Outfit',sans-serif;font-size:0.62rem;font-weight:600;color:white;white-space:nowrap}
+.bar-val.dark{color:var(--ink2)}
 
-  .text-input {
-    width: 100%; padding: 10px 13px; border-radius: 11px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-family: 'Noto Sans JP', sans-serif; font-size: 0.84rem;
-    color: var(--ink); outline: none; transition: border-color 0.18s;
-    box-sizing: border-box; margin-bottom: 12px;
-  }
-  .text-input:focus { border-color: var(--accent); }
-  .text-input::placeholder { color: var(--ink3); }
+/* stacked user bar */
+.stack-bar{display:flex;height:22px;border-radius:8px;overflow:hidden;margin-top:6px}
+.stack-a{background:var(--a-bd);transition:width 0.5s ease;display:flex;align-items:center;justify-content:center}
+.stack-b{background:var(--b-bd);transition:width 0.5s ease;display:flex;align-items:center;justify-content:center}
+.stack-lbl{font-size:0.58rem;font-weight:700;color:white;white-space:nowrap;padding:0 4px;overflow:hidden}
 
-  /* ── GAS STATUS ── */
-  .gas-status {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
-    padding: 9px 12px; border-radius: 11px; background: var(--sf2);
-    border: 1.5px solid var(--border); font-size: 0.72rem; color: var(--ink2);
-    width: 100%; overflow: hidden;
-  }
-  .gas-status .gdot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); flex-shrink: 0; }
-  .gas-status .gdot.ok { background: #72b840; }
-  .gas-status span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .gas-status a { color: var(--accent); text-decoration: none; flex-shrink: 0; font-size: 0.7rem; font-weight: 600; }
-  .gas-status a:hover { text-decoration: underline; }
+/* trend mini chart */
+.trend-wrap{width:100%;overflow:hidden;position:relative}
+.trend-svg{width:100%;display:block}
 
-  /* ── ACTION BUTTON ── */
-  .action-btn {
-    width: 100%; padding: 14px; border-radius: 14px; border: none;
-    background: var(--accent); color: white;
-    font-family: 'Outfit', sans-serif; font-size: 0.92rem; font-weight: 600;
-    cursor: pointer; transition: all 0.22s; letter-spacing: 0.03em; overflow: hidden;
-  }
-  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(90,130,40,0.28); }
-  .action-btn:active { transform: scale(0.98); }
-  .action-btn:disabled { opacity: 0.5; cursor: default; transform: none !important; box-shadow: none; }
-  .action-btn.sav-btn { background: var(--sav); }
-  .action-btn.sav-btn:hover { box-shadow: 0 6px 20px rgba(60,110,90,0.28); }
+/* month table */
+.month-table{width:100%;border-collapse:collapse;font-size:0.74rem}
+.month-table th{text-align:left;color:var(--ink3);font-weight:600;font-size:0.65rem;letter-spacing:0.06em;padding:6px 8px;border-bottom:1px solid var(--border)}
+.month-table td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--ink)}
+.month-table td:nth-child(n+2){text-align:right;font-family:'Outfit',sans-serif;font-weight:500}
+.month-table tr:last-child td{border-bottom:none}
+.month-table tr:hover td{background:var(--sf2)}
 
-  /* ── BUDGET BLOCK (full-width, merged) ── */
-  .budget-block {
-    background: var(--surface); border-radius: var(--r-card);
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 16px; overflow: hidden; width: 100%;
-    position: relative;
-  }
-  .budget-block::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-lt));
-  }
-  .budget-top {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    gap: 12px; padding: 18px 20px 14px;
-  }
-  .budget-left { flex: 1; min-width: 0; }
-  .b-lbl { font-size: 0.67rem; color: var(--ink3); font-weight: 500; letter-spacing: 0.04em; margin-bottom: 4px; }
-  .b-num {
-    font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 600;
-    color: var(--ink); letter-spacing: -0.02em;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .b-sub { font-size: 0.66rem; color: var(--ink3); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .budget-right { text-align: right; flex-shrink: 0; }
-  .budget-right .b-lbl { text-align: right; }
-  .budget-right input {
-    width: 108px; padding: 5px 8px; border-radius: 9px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600;
-    color: var(--ink); outline: none; text-align: right; display: block;
-  }
-  .budget-right input:focus { border-color: var(--accent); }
-  /* remain bar */
-  .remain-row {
-    padding: 0 20px 16px;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  .remain-labels {
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-  .remain-lbl { font-size: 0.66rem; color: var(--ink3); }
-  .remain-num {
-    font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 600; color: var(--ink);
-  }
-  .remain-num.over { color: #c04040; }
-  .prog-bar { height: 6px; border-radius: 10px; background: var(--sf2); overflow: hidden; width: 100%; }
-  .prog-fill {
-    height: 100%; border-radius: 10px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-lt));
-    transition: width 0.5s ease;
-  }
-  .prog-fill.over { background: linear-gradient(90deg, #e05050, #f09090); }
-  /* user split row */
-  .user-split {
-    display: grid; grid-template-columns: 1fr 1fr;
-    border-top: 1px solid var(--border);
-  }
-  .split-cell {
-    padding: 12px 20px; min-width: 0;
-  }
-  .split-cell:first-child { border-right: 1px solid var(--border); }
-  .split-cell .b-lbl { margin-bottom: 3px; }
-  .split-num {
-    font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 600;
-    color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .split-sub { font-size: 0.64rem; color: var(--ink3); margin-top: 1px; }
-  /* colored top bar per user cell */
-  .split-cell.ua-cell { border-top: 2px solid var(--a-bd); }
-  .split-cell.ub-cell { border-top: 2px solid var(--b-bd); }
+/* TOAST */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--ink);color:white;padding:11px 22px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:500;z-index:999;transition:transform 0.26s ease;white-space:nowrap;box-shadow:0 6px 24px rgba(40,50,20,0.22);max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translateX(-50%) translateY(0)}
 
-  /* ── SAVINGS SUMMARY BLOCK ── */
-  .sav-block {
-    background: var(--surface); border-radius: var(--r-card);
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 16px; overflow: hidden; width: 100%;
-    position: relative;
-  }
-  .sav-block::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0;
-    height: 3px; background: linear-gradient(90deg, var(--sav), var(--sav-bd));
-  }
-  .sav-top {
-    display: flex; gap: 0; border-bottom: 1px solid var(--border);
-  }
-  .sav-col {
-    flex: 1; padding: 16px; min-width: 0; position: relative;
-  }
-  .sav-col + .sav-col { border-left: 1px solid var(--border); }
-  .sav-col .s-lbl { font-size: 0.64rem; color: var(--ink3); letter-spacing: 0.04em; margin-bottom: 4px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .sav-col .s-num {
-    font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 600;
-    color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .sav-col .s-num.negative { color: var(--sav); }
-  .sav-col .s-sub { font-size: 0.62rem; color: var(--ink3); margin-top: 2px; }
-  /* user split in savings */
-  .sav-user-split { display: grid; grid-template-columns: 1fr 1fr; }
-  .sav-split-cell { padding: 10px 16px; min-width: 0; }
-  .sav-split-cell:first-child { border-right: 1px solid var(--border); }
-  .sav-split-cell.ua-cell { border-top: 2px solid var(--a-bd); }
-  .sav-split-cell.ub-cell { border-top: 2px solid var(--b-bd); }
-
-  /* ── BREAKDOWN ── */
-  .bd-item { display: flex; align-items: center; gap: 10px; margin-bottom: 11px; min-width: 0; }
-  .bd-item:last-child { margin-bottom: 0; }
-  .bd-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .bd-info { flex: 1; min-width: 0; }
-  .bd-name { font-size: 0.78rem; font-weight: 500; color: var(--ink); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bd-bar { height: 4px; border-radius: 10px; background: var(--sf2); overflow: hidden; }
-  .bd-fill { height: 100%; border-radius: 10px; transition: width 0.55s ease; }
-  .bd-amt { font-family: 'Outfit', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--ink); flex-shrink: 0; white-space: nowrap; }
-
-  /* ── ENTRY LIST ── */
-  .date-grp { margin-bottom: 16px; }
-  .date-lbl { font-size: 0.65rem; color: var(--ink3); font-weight: 700; letter-spacing: 0.09em; margin-bottom: 7px; padding-left: 2px; }
-  .entry-item {
-    background: var(--surface); border-radius: 14px; padding: 12px;
-    margin-bottom: 7px; display: flex; align-items: center; gap: 9px;
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-    transition: transform 0.18s; animation: slideIn 0.26s ease;
-    width: 100%; overflow: hidden; min-width: 0;
-  }
-  .entry-item:hover { transform: translateX(3px); }
-  @keyframes slideIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:translateY(0); } }
-  .e-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .e-info { flex: 1; min-width: 0; }
-  .e-name { font-size: 0.8rem; font-weight: 500; color: var(--ink); margin-bottom: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .e-meta { font-size: 0.65rem; color: var(--ink3); display: flex; gap: 5px; align-items: center; overflow: hidden; }
-  .e-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .e-tag { font-size: 0.6rem; padding: 2px 6px; border-radius: 50px; background: var(--sf2); color: var(--ink2); flex-shrink: 0; }
-  .e-right { text-align: right; flex-shrink: 0; }
-  .e-amount { font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
-  .e-amount.negative { color: var(--sav); }
-  .e-utag { font-size: 0.6rem; padding: 2px 7px; border-radius: 50px; margin-top: 3px; display: inline-block; white-space: nowrap; }
-  .e-utag.ua { background: var(--a-bg); color: var(--a-tx); }
-  .e-utag.ub { background: var(--b-bg); color: var(--b-tx); }
-  .e-del { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 0.78rem; padding: 4px 5px; border-radius: 7px; transition: all 0.18s; flex-shrink: 0; }
-  .e-del:hover { color: #c04060; background: #fce8ee; }
-
-  /* ── SETTINGS ACCORDION ── */
-  .settings-card {
-    background: var(--surface); border-radius: var(--r-card);
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-    margin-bottom: 16px; overflow: hidden; width: 100%;
-  }
-  .settings-card details summary {
-    cursor: pointer; padding: 15px 18px;
-    font-family: 'Outfit', sans-serif; font-size: 0.68rem; font-weight: 600;
-    color: var(--ink2); letter-spacing: 0.1em; text-transform: uppercase;
-    list-style: none; display: flex; align-items: center; justify-content: space-between;
-    user-select: none;
-  }
-  .settings-card details summary::-webkit-details-marker { display: none; }
-  .settings-card details summary::after { content: '＋'; font-size: 1rem; color: var(--ink3); font-weight: 300; }
-  .settings-card details[open] summary::after { content: '－'; }
-  .settings-inner { padding: 0 18px 18px; width: 100%; overflow: hidden; }
-
-  .step { display: flex; gap: 10px; margin-bottom: 12px; }
-  .step-n {
-    width: 21px; height: 21px; border-radius: 50%; background: var(--accent);
-    color: white; font-size: 0.66rem; font-weight: 700; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; margin-top: 1px;
-  }
-  .step-t { font-size: 0.77rem; color: var(--ink); line-height: 1.65; min-width: 0; overflow: hidden; }
-  .step-t strong { color: var(--accent-dk); }
-  .step-t code {
-    display: block; background: var(--sf2); border-radius: 8px;
-    padding: 10px 12px; font-family: 'Courier New', monospace; font-size: 0.67rem;
-    color: var(--ink); margin-top: 7px; white-space: pre-wrap; word-break: break-all;
-    border: 1px solid var(--border); user-select: all; width: 100%;
-  }
-  .url-row { display: flex; gap: 7px; margin-top: 11px; width: 100%; }
-  .url-row input {
-    flex: 1; min-width: 0; padding: 9px 11px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-size: 0.75rem; color: var(--ink); outline: none;
-    font-family: 'Noto Sans JP', sans-serif; transition: border-color 0.18s; width: 100%;
-  }
-  .url-row input:focus { border-color: var(--accent); }
-  .url-row input::placeholder { color: var(--ink3); font-size: 0.68rem; }
-  .url-save-btn {
-    padding: 9px 13px; border-radius: 10px; border: none;
-    background: var(--accent); color: white;
-    font-family: 'Outfit', sans-serif; font-size: 0.78rem; font-weight: 600;
-    cursor: pointer; transition: opacity 0.18s; white-space: nowrap; flex-shrink: 0;
-  }
-  .url-save-btn:hover { opacity: 0.82; }
-
-  .name-row { display: flex; gap: 8px; align-items: center; margin-bottom: 9px; }
-  .name-row:last-child { margin-bottom: 0; }
-  .name-row label { font-size: 0.72rem; color: var(--ink2); white-space: nowrap; width: 90px; flex-shrink: 0; }
-  .name-row input {
-    flex: 1; min-width: 0; padding: 8px 11px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--sf2);
-    font-family: 'Noto Sans JP', sans-serif; font-size: 0.84rem;
-    color: var(--ink); outline: none; transition: border-color 0.18s; width: 100%;
-  }
-  .name-row input:focus { border-color: var(--accent); }
-
-  .empty { text-align: center; padding: 32px 16px; color: var(--ink3); }
-  .empty .em { font-size: 2rem; margin-bottom: 10px; }
-  .empty p { font-size: 0.78rem; line-height: 1.7; }
-
-  .toast {
-    position: fixed; bottom: 28px; left: 50%;
-    transform: translateX(-50%) translateY(70px);
-    background: var(--ink); color: white;
-    padding: 11px 22px; border-radius: var(--r-pill);
-    font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 500;
-    z-index: 999; transition: transform 0.26s ease; white-space: nowrap;
-    box-shadow: 0 6px 24px rgba(40,50,20,0.22);
-    max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner {
-    width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.35);
-    border-top-color: white; border-radius: 50%;
-    animation: spin 0.65s linear infinite;
-    display: inline-block; vertical-align: middle; margin-right: 5px;
-  }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-  .pane { animation: fadeUp 0.28s ease both; }
-  .pane-hidden { display: none !important; }
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,0.35);border-top-color:white;border-radius:50%;animation:spin 0.65s linear infinite;display:inline-block;vertical-align:middle;margin-right:5px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pane{animation:fadeUp 0.28s ease both}
+.pane-hidden{display:none!important}
+.empty{text-align:center;padding:32px 16px;color:var(--ink3)}
+.empty .em{font-size:2rem;margin-bottom:10px}
+.empty p{font-size:0.78rem;line-height:1.7}
 </style>
 </head>
 <body>
@@ -480,32 +241,28 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tabE" onclick="switchTab('expense')">支出</button>
     <button class="tab-btn"        id="tabS" onclick="switchTab('saving')">貯金</button>
+    <button class="tab-btn"        id="tabR" onclick="switchTab('report')">収支</button>
   </div>
 
-  <!-- ══ EXPENSE PANE ══ -->
+  <!-- ══════════ EXPENSE ══════════ -->
   <div id="paneE" class="pane">
-
     <div class="month-nav">
       <button onclick="changeMonth(-1)">‹</button>
       <div class="month-title" id="expMonthTitle"></div>
       <button onclick="changeMonth(1)">›</button>
     </div>
 
-    <!-- 入力 -->
     <div class="card">
       <div class="sec-label">支出を追加</div>
       <div class="user-selector">
         <button class="user-sel-btn ua active" id="expSelA" onclick="selectExpUser('A')">
-          <div class="av" id="avA">A</div><span id="selNameA">あなた</span>
+          <div class="av">A</div><span id="selNameA">やほ</span>
         </button>
         <button class="user-sel-btn ub" id="expSelB" onclick="selectExpUser('B')">
-          <div class="av" id="avB">B</div><span id="selNameB">パートナー</span>
+          <div class="av">B</div><span id="selNameB">りとちゃ</span>
         </button>
       </div>
-
-      <!-- Category grid (no scroll) -->
       <div class="cat-grid" id="catGrid"></div>
-
       <div class="row-btns" id="payRow"></div>
       <div class="amount-row">
         <div class="yen">¥</div>
@@ -515,7 +272,6 @@
       <button class="action-btn" id="expAddBtn" onclick="addExpense()">＋　支出を追加する</button>
     </div>
 
-    <!-- 合計・予算・残り（全幅1ブロック） -->
     <div class="budget-block">
       <div class="budget-top">
         <div class="budget-left">
@@ -538,61 +294,52 @@
       </div>
       <div class="user-split">
         <div class="split-cell ua-cell">
-          <div class="b-lbl" id="lblA">あなたの支出</div>
+          <div class="b-lbl" id="lblA">やほの支出</div>
           <div class="split-num">¥<span id="amtA">0</span></div>
           <div class="split-sub" id="cntA">0件</div>
         </div>
         <div class="split-cell ub-cell">
-          <div class="b-lbl" id="lblB">パートナーの支出</div>
+          <div class="b-lbl" id="lblB">りとちゃの支出</div>
           <div class="split-num">¥<span id="amtB">0</span></div>
           <div class="split-sub" id="cntB">0件</div>
         </div>
       </div>
     </div>
 
-    <!-- カテゴリ別 -->
     <div class="card">
       <div class="sec-label">カテゴリ別</div>
       <div id="breakdownList"></div>
     </div>
 
-    <!-- 記録 -->
     <div>
       <div class="sec-label">今月の記録</div>
       <div id="expEntryList"></div>
     </div>
-  </div><!-- /paneE -->
+  </div>
 
-  <!-- ══ SAVING PANE ══ -->
+  <!-- ══════════ SAVING ══════════ -->
   <div id="paneS" class="pane pane-hidden">
-
-    <!-- 入力 -->
     <div class="card">
       <div class="sec-label">貯金を記録</div>
       <div class="user-selector">
         <button class="user-sel-btn ua active" id="savSelA" onclick="selectSavUser('A')">
-          <div class="av">A</div><span id="savNameA">あなた</span>
+          <div class="av">A</div><span id="savNameA">やほ</span>
         </button>
         <button class="user-sel-btn ub" id="savSelB" onclick="selectSavUser('B')">
-          <div class="av">B</div><span id="savNameB">パートナー</span>
+          <div class="av">B</div><span id="savNameB">りとちゃ</span>
         </button>
       </div>
-
-      <!-- ＋ / ー toggle -->
       <div class="row-btns" id="savSignRow"></div>
-      <!-- 現金 / 口座 -->
       <div class="row-btns" id="savTypeRow"></div>
-
       <div class="amount-row">
         <div class="sign-indicator plus" id="savSignInd">＋</div>
         <div class="yen">¥</div>
         <input type="number" class="amount-input" id="savAmount" placeholder="0" inputmode="numeric">
       </div>
-      <input type="text" class="text-input" id="savMemo" placeholder="メモ（任意）　例：先月の余剰分">
+      <input type="text" class="text-input" id="savMemo" placeholder="メモ（任意）">
       <button class="action-btn sav-btn" id="savAddBtn" onclick="addSaving()">＋　貯金を記録する</button>
     </div>
 
-    <!-- 累計＋今月 サマリー -->
     <div class="sav-block">
       <div class="sav-top">
         <div class="sav-col">
@@ -608,130 +355,118 @@
       </div>
       <div class="sav-user-split">
         <div class="sav-split-cell ua-cell">
-          <div class="s-lbl" id="savLblA">あなたの累計</div>
+          <div class="s-lbl" id="savLblA">やほの累計</div>
           <div class="split-num">¥<span id="savAmtA">0</span></div>
           <div class="split-sub" id="savCntA">0件</div>
         </div>
         <div class="sav-split-cell ub-cell">
-          <div class="s-lbl" id="savLblB">パートナーの累計</div>
+          <div class="s-lbl" id="savLblB">りとちゃの累計</div>
           <div class="split-num">¥<span id="savAmtB">0</span></div>
           <div class="split-sub" id="savCntB">0件</div>
         </div>
       </div>
     </div>
 
-    <!-- 内訳 -->
     <div class="card">
       <div class="sec-label">内訳（現金 / 口座）</div>
       <div id="savBreakdown"></div>
     </div>
 
-    <!-- 記録 -->
     <div>
       <div class="sec-label">貯金の記録</div>
       <div id="savEntryList"></div>
     </div>
-  </div><!-- /paneS -->
-
-  <!-- GAS SETUP -->
-  <div class="settings-card">
-    <details id="gasDetail">
-      <summary>⚡ スプレッドシート連携の設定</summary>
-      <div class="settings-inner">
-        <div class="step"><div class="step-n">1</div>
-          <div class="step-t">Google スプレッドシートを新規作成 → 「拡張機能」→「Apps Script」を開く</div>
-        </div>
-        <div class="step"><div class="step-n">2</div>
-          <div class="step-t">下のコードを全選択して貼り付け → 保存（Ctrl+S）
-            <code>function doPost(e) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const d  = JSON.parse(e.postData.contents);
-  const sheetName = d.sheet || '家計簿';
-  let sheet = ss.getSheetByName(sheetName);
-
-  // 削除リクエスト
-  if (d.action === 'delete') {
-    if (sheet) {
-      const rows = sheet.getDataRange().getValues();
-      for (let i = rows.length - 1; i >= 1; i--) {
-        if (String(rows[i][0]) === String(d.id)) {
-          sheet.deleteRow(i + 1);
-          break;
-        }
-      }
-    }
-    return ContentService
-      .createTextOutput(JSON.stringify({ok:true}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  // 追加リクエスト
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
-    if (sheetName === '家計簿') {
-      sheet.appendRow(['ID','日付','曜日','記入者','カテゴリ','決済','金額','メモ']);
-    } else {
-      sheet.appendRow(['ID','日付','曜日','記入者','種別','金額','メモ']);
-    }
-    sheet.setFrozenRows(1);
-  }
-  if (sheetName === '家計簿') {
-    sheet.appendRow([d.id,d.date,d.weekday,d.user,d.category,d.payment,d.amount,d.memo]);
-  } else {
-    sheet.appendRow([d.id,d.date,d.weekday,d.user,d.savType,d.amount,d.memo]);
-  }
-  return ContentService
-    .createTextOutput(JSON.stringify({ok:true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</code>
-          </div>
-        </div>
-        <div class="step"><div class="step-n">3</div>
-          <div class="step-t">「デプロイ」→「新しいデプロイ」→ 種類：<strong>ウェブアプリ</strong> → アクセス権：<strong>全員</strong> → デプロイ → URLをコピー</div>
-        </div>
-        <div class="step"><div class="step-n">4</div>
-          <div class="step-t">URLをここに貼り付けて「保存」</div>
-        </div>
-        <div class="url-row">
-          <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/…/exec">
-          <button class="url-save-btn" onclick="saveGasUrl()">保存</button>
-        </div>
-      </div>
-    </details>
   </div>
 
-  <!-- NAME SETTINGS -->
-  <div class="settings-card">
-    <details>
-      <summary>👤 名前の設定</summary>
-      <div class="settings-inner">
-        <div class="name-row">
-          <label>あなたの名前</label>
-          <input type="text" id="setNameA" placeholder="例：さくら" oninput="updateNames()">
-        </div>
-        <div class="name-row">
-          <label>パートナーの名前</label>
-          <input type="text" id="setNameB" placeholder="例：たかし" oninput="updateNames()">
-        </div>
+  <!-- ══════════ REPORT ══════════ -->
+  <div id="paneR" class="pane pane-hidden">
+
+    <!-- フィルター -->
+    <div class="filter-row">
+      <select class="filter-select" id="repRange" onchange="renderReport()">
+        <option value="3">直近3ヶ月</option>
+        <option value="6" selected>直近6ヶ月</option>
+        <option value="12">直近12ヶ月</option>
+        <option value="all">全期間</option>
+      </select>
+      <select class="filter-select" id="repUser" onchange="renderReport()">
+        <option value="all">全員</option>
+        <option value="A">やほのみ</option>
+        <option value="B">りとちゃのみ</option>
+      </select>
+    </div>
+
+    <!-- 3枚サマリー -->
+    <div class="rep-3">
+      <div class="rep-card rc-total">
+        <div class="r-lbl">期間合計</div>
+        <div class="r-num" id="repTotal">¥0</div>
+        <div class="r-sub" id="repTotalSub">0件</div>
       </div>
-    </details>
+      <div class="rep-card rc-a">
+        <div class="r-lbl" id="repLblA">やほ</div>
+        <div class="r-num" id="repAmtA">¥0</div>
+        <div class="r-sub" id="repCntA">0件</div>
+      </div>
+      <div class="rep-card rc-b">
+        <div class="r-lbl" id="repLblB">りとちゃ</div>
+        <div class="r-num" id="repAmtB">¥0</div>
+        <div class="r-sub" id="repCntB">0件</div>
+      </div>
+    </div>
+
+    <!-- 担当別バー -->
+    <div class="card">
+      <div class="sec-label">担当別の割合</div>
+      <div id="repUserStack"></div>
+    </div>
+
+    <!-- カテゴリ別ドーナツチャート -->
+    <div class="card">
+      <div class="sec-label">カテゴリ別の割合</div>
+      <div id="repDonut"></div>
+    </div>
+
+    <!-- 月別推移ライングラフ -->
+    <div class="card">
+      <div class="sec-label">月別支出の推移</div>
+      <div class="trend-wrap" id="repTrend"></div>
+    </div>
+
+    <!-- 月別テーブル -->
+    <div class="card">
+      <div class="sec-label">月別サマリー</div>
+      <div style="overflow-x:auto">
+        <table class="month-table" id="repTable"></table>
+      </div>
+    </div>
+
+    <!-- スプレッドシートリンク -->
+    <a href="https://docs.google.com/spreadsheets/d/1MuUOGOuRJJomu4cAPGQdIDZrfi38_A-LyZC8n7_81rY/edit?gid=2105635758#gid=2105635758"
+      target="_blank" rel="noopener"
+      style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border-radius:14px;background:var(--accent-bg);border:1.5px solid var(--sel-bd);color:var(--accent-dk);font-family:'Outfit',sans-serif;font-size:0.9rem;font-weight:600;text-decoration:none;transition:all 0.2s;box-sizing:border-box"
+      onmouseover="this.style.background='var(--sel-bg)'" onmouseout="this.style.background='var(--accent-bg)'">
+      📊　スプレッドシートを開く →
+    </a>
   </div>
+
 </main>
-
 <div class="toast" id="toast"></div>
 
 <script>
 // ── CONSTANTS ──
-const CATS = [
-  { id:'food',    lbl:'食費',      color:'#7ab840' },
-  { id:'eat-out', lbl:'外食',      color:'#c89830' },
-  { id:'daily',   lbl:'日用品',    color:'#50a870' },
-  { id:'social',  lbl:'交際',      color:'#5090c8' },
-  { id:'fashion', lbl:'被服・美容', color:'#c06090' },
-  { id:'date',    lbl:'デート',    color:'#e08040' },
-  { id:'utility', lbl:'光熱費',    color:'#90a840' },
-  { id:'rent',    lbl:'家賃',      color:'#6878b8' },
-  { id:'other',   lbl:'その他',    color:'#a0a890' },
+const NAMES = {A:'やほ', B:'りとちゃ'};
+
+let CATS = [
+  {id:'food',    lbl:'食費',      color:'#7ab840'},
+  {id:'eat-out', lbl:'外食',      color:'#c89830'},
+  {id:'daily',   lbl:'日用品',    color:'#50a870'},
+  {id:'social',  lbl:'交際',      color:'#5090c8'},
+  {id:'fashion', lbl:'被服・美容', color:'#c06090'},
+  {id:'date',    lbl:'デート',    color:'#e08040'},
+  {id:'utility', lbl:'光熱費',    color:'#90a840'},
+  {id:'rent',    lbl:'家賃',      color:'#6878b8'},
+  {id:'other',   lbl:'その他',    color:'#a0a890'},
 ];
 const PAYS     = [{id:'cash',lbl:'現金'},{id:'ic',lbl:'キャッシュレス'},{id:'credit',lbl:'クレカ'}];
 const SAV_TYPES= [{id:'cash',lbl:'現金'},{id:'account',lbl:'口座'}];
@@ -740,13 +475,10 @@ const SAV_SIGNS= [{id:'plus',lbl:'＋ 積み立て'},{id:'minus',lbl:'ー 引き
 // ── STATE ──
 let currentExpUser='A', currentSavUser='A';
 let currentMonth=new Date(); currentMonth.setDate(1);
-let currentSavMonth=new Date(); currentSavMonth.setDate(1);
 let expenses=JSON.parse(localStorage.getItem('kakeibo_expenses')||'[]');
 let savings =JSON.parse(localStorage.getItem('kakeibo_savings') ||'[]');
-let names   =JSON.parse(localStorage.getItem('kakeibo_names')   ||'{"A":"あなた","B":"パートナー"}');
-// ▼ GAS URLをここに直接貼り付けると全デバイスで共有されます
-const GAS_URL_DEFAULT = 'https://script.google.com/macros/s/AKfycbzwacewD5YvNZiMe-boqJafORUHk8mrtE1t9gp3jbyAlECmzSzmDhgIl1qoPrssEgXX6w/exec';
-let gasUrl = localStorage.getItem('kakeibo_gas_url') || GAS_URL_DEFAULT;
+const GAS_URL_DEFAULT='https://script.google.com/macros/s/AKfycbzwacewD5YvNZiMe-boqJafORUHk8mrtE1t9gp3jbyAlECmzSzmDhgIl1qoPrssEgXX6w/exec';
+let gasUrl=localStorage.getItem('kakeibo_gas_url')||GAS_URL_DEFAULT;
 let selCat='food', selPay='cash', selSavType='cash', selSavSign='plus';
 
 // ── INIT ──
@@ -754,21 +486,19 @@ function init(){
   renderCats(); renderPayBtns(); renderSavTypeBtns(); renderSavSignBtns();
   updateMonthTitle(); updateExpSummary(); renderExpEntries(); renderBreakdown();
   updateSavSummary(); renderSavEntries(); renderSavBreakdown();
-  applyNames(); updateGasUI();
-  if(names.A!=='あなた')     document.getElementById('setNameA').value=names.A;
-  if(names.B!=='パートナー') document.getElementById('setNameB').value=names.B;
-  if(gasUrl) document.getElementById('gasUrlInput').value=gasUrl;
+  updateGasUI();
 }
 
-// ── TAB ──
+// ── TABS ──
 function switchTab(tab){
-  document.getElementById('paneE').classList.toggle('pane-hidden', tab!=='expense');
-  document.getElementById('paneS').classList.toggle('pane-hidden', tab!=='saving');
-  document.getElementById('tabE').classList.toggle('active', tab==='expense');
-  document.getElementById('tabS').classList.toggle('active', tab==='saving');
+  ['expense','saving','report'].forEach(t=>{
+    document.getElementById('pane'+{expense:'E',saving:'S',report:'R'}[t]).classList.toggle('pane-hidden',t!==tab);
+    document.getElementById('tab'+{expense:'E',saving:'S',report:'R'}[t]).classList.toggle('active',t===tab);
+  });
+  if(tab==='report') renderReport();
 }
 
-// ── CATEGORIES ──
+// ── CATS ──
 function renderCats(){
   document.getElementById('catGrid').innerHTML=CATS.map(c=>
     `<div class="cat-pill${c.id===selCat?' selected':''}" onclick="selCatFn('${c.id}')">${c.lbl}</div>`
@@ -776,7 +506,7 @@ function renderCats(){
 }
 function selCatFn(id){selCat=id;renderCats();}
 
-// ── PAYMENT ──
+// ── PAYMENTS ──
 function renderPayBtns(){
   document.getElementById('payRow').innerHTML=PAYS.map(p=>
     `<button class="row-btn${p.id===selPay?' selected':''}" onclick="selPayFn('${p.id}')">${p.lbl}</button>`
@@ -799,10 +529,9 @@ function renderSavSignBtns(){
   ).join('');
 }
 function selSavSignFn(id){
-  selSavSign=id;
-  renderSavSignBtns();
+  selSavSign=id; renderSavSignBtns();
   const ind=document.getElementById('savSignInd');
-  ind.textContent= id==='plus'?'＋':'ー';
+  ind.textContent=id==='plus'?'＋':'ー';
   ind.className='sign-indicator '+(id==='plus'?'plus':'minus');
 }
 
@@ -854,7 +583,7 @@ async function addExpense(){
     try{
       await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({sheet:'家計簿',id,date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
-          weekday:days[now.getDay()],user:names[currentExpUser],category:cat.lbl,payment:pay.lbl,amount:amt,memo:memo||''})});
+          weekday:days[now.getDay()],user:NAMES[currentExpUser],category:cat.lbl,payment:pay.lbl,amount:amt,memo:memo||''})});
       showToast(`¥${amt.toLocaleString()} 追加 & スプシ送信 ✓`);
     }catch{showToast('追加しました（スプシ送信エラー）');}
     finally{btn.disabled=false;btn.innerHTML='＋　支出を追加する';}
@@ -866,7 +595,7 @@ async function addSaving(){
   const absAmt=parseInt(document.getElementById('savAmount').value);
   const memo=document.getElementById('savMemo').value.trim();
   if(!absAmt||absAmt<=0){showToast('金額を入力してください 💸');return;}
-  const signedAmt= selSavSign==='minus' ? -absAmt : absAmt;
+  const signedAmt=selSavSign==='minus'?-absAmt:absAmt;
   const now=new Date(), days=['日','月','火','水','木','金','土'];
   const st=SAV_TYPES.find(t=>t.id===selSavType)||SAV_TYPES[0];
   const id=Date.now();
@@ -881,7 +610,7 @@ async function addSaving(){
     try{
       await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({sheet:'貯金',id,date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`,
-          weekday:days[now.getDay()],user:names[currentSavUser],savType:st.lbl,amount:signedAmt,memo:memo||''})});
+          weekday:days[now.getDay()],user:NAMES[currentSavUser],savType:st.lbl,amount:signedAmt,memo:memo||''})});
       showToast(`${selSavSign==='minus'?'−':'＋'}¥${absAmt.toLocaleString()} を記録 & スプシ送信 ✓`);
     }catch{showToast('記録しました（スプシ送信エラー）');}
     finally{btn.disabled=false;btn.innerHTML='＋　貯金を記録する';}
@@ -893,20 +622,14 @@ async function deleteExpense(id){
   expenses=expenses.filter(e=>e.id!==id);
   localStorage.setItem('kakeibo_expenses',JSON.stringify(expenses));
   updateExpSummary();renderExpEntries();renderBreakdown();
-  if(gasUrl){
-    try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'delete',sheet:'家計簿',id})});}catch{}
-  }
+  if(gasUrl){try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',sheet:'家計簿',id})});}catch{}}
   showToast('削除しました');
 }
 async function deleteSaving(id){
   savings=savings.filter(s=>s.id!==id);
   localStorage.setItem('kakeibo_savings',JSON.stringify(savings));
   updateSavSummary();renderSavEntries();renderSavBreakdown();
-  if(gasUrl){
-    try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'delete',sheet:'貯金',id})});}catch{}
-  }
+  if(gasUrl){try{await fetch(gasUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'delete',sheet:'貯金',id})});}catch{}}
   showToast('削除しました');
 }
 
@@ -917,8 +640,7 @@ function updateExpSummary(){
   const aE=mes.filter(e=>e.user==='A'),bE=mes.filter(e=>e.user==='B');
   const aT=aE.reduce((s,e)=>s+e.amount,0),bT=bE.reduce((s,e)=>s+e.amount,0);
   const budget=parseInt(document.getElementById('budgetInput').value)||150000;
-  const remain=budget-total;
-  const over=remain<0;
+  const remain=budget-total, over=remain<0;
   document.getElementById('totalNum').textContent=total.toLocaleString();
   document.getElementById('amtA').textContent=aT.toLocaleString();
   document.getElementById('amtB').textContent=bT.toLocaleString();
@@ -926,10 +648,9 @@ function updateExpSummary(){
   document.getElementById('cntB').textContent=`${bE.length}件`;
   const pct=Math.min(100,(total/budget)*100);
   const pf=document.getElementById('budgetProg');
-  pf.style.width=pct+'%';
-  pf.className='prog-fill'+(over?' over':'');
+  pf.style.width=pct+'%'; pf.className='prog-fill'+(over?' over':'');
   const rn=document.getElementById('remainNum');
-  rn.textContent= over?`−¥${Math.abs(remain).toLocaleString()} オーバー`:`¥${remain.toLocaleString()}`;
+  rn.textContent=over?`−¥${Math.abs(remain).toLocaleString()} オーバー`:`¥${remain.toLocaleString()}`;
   rn.className='remain-num'+(over?' over':'');
   document.getElementById('budgetSub').textContent=
     over?`予算 ¥${budget.toLocaleString()} を超過`:`予算 ¥${budget.toLocaleString()} のうち ${Math.round(pct)}% 使用`;
@@ -938,17 +659,16 @@ function updateExpSummary(){
 // ── SAV SUMMARY ──
 function updateSavSummary(){
   const total=savings.reduce((s,e)=>s+e.amount,0);
-  const mes=mSavings();
-  const monthTotal=mes.reduce((s,e)=>s+e.amount,0);
+  const mes=mSavings(), monthTotal=mes.reduce((s,e)=>s+e.amount,0);
   const aS=savings.filter(e=>e.user==='A'),bS=savings.filter(e=>e.user==='B');
   const aT=aS.reduce((s,e)=>s+e.amount,0),bT=bS.reduce((s,e)=>s+e.amount,0);
   const tn=document.getElementById('savTotalNum');
   tn.textContent=`¥${Math.abs(total).toLocaleString()}${total<0?' (マイナス)':''}`;
   tn.className='s-num'+(total<0?' negative':'');
   document.getElementById('savTotalCnt').textContent=`全${savings.length}件`;
-  const mn=document.getElementById('savMonthNum');
   const m=currentMonth;
   document.getElementById('savMonthLbl').textContent=`${m.getMonth()+1}月の貯金`;
+  const mn=document.getElementById('savMonthNum');
   mn.textContent=`${monthTotal<0?'−':''}¥${Math.abs(monthTotal).toLocaleString()}`;
   mn.className='s-num'+(monthTotal<0?' negative':'');
   document.getElementById('savMonthCnt').textContent=`${mes.length}件`;
@@ -982,7 +702,7 @@ function renderExpEntries(){
         </div>
         <div class="e-right">
           <div class="e-amount">¥${e.amount.toLocaleString()}</div>
-          <div class="e-utag ${e.user==='A'?'ua':'ub'}">${names[e.user]}</div>
+          <div class="e-utag ${e.user==='A'?'ua':'ub'}">${NAMES[e.user]}</div>
         </div>
         <button class="e-del" onclick="deleteExpense(${e.id})">✕</button>
       </div>`;
@@ -1013,7 +733,7 @@ function renderSavEntries(){
         </div>
         <div class="e-right">
           <div class="e-amount${neg?' negative':''}">${neg?'−':'＋'}¥${Math.abs(e.amount).toLocaleString()}</div>
-          <div class="e-utag ${e.user==='A'?'ua':'ub'}">${names[e.user]}</div>
+          <div class="e-utag ${e.user==='A'?'ua':'ub'}">${NAMES[e.user]}</div>
         </div>
         <button class="e-del" onclick="deleteSaving(${e.id})">✕</button>
       </div>`;
@@ -1028,7 +748,7 @@ function renderBreakdown(){
   mes.forEach(e=>{ct[e.category]=(ct[e.category]||0)+e.amount;});
   document.getElementById('breakdownList').innerHTML=
     Object.entries(ct).sort((a,b)=>b[1]-a[1]).map(([id,amt])=>{
-      const cat=CATS.find(c=>c.id===id)||CATS[8];
+      const cat=CATS.find(c=>c.id===id)||{lbl:id,color:'#a0a890'};
       const pct=(amt/total*100).toFixed(0);
       return `<div class="bd-item">
         <div class="bd-dot" style="background:${cat.color}"></div>
@@ -1043,16 +763,10 @@ function renderBreakdown(){
 
 // ── BREAKDOWN (savings) ──
 function renderSavBreakdown(){
-  // 現金・口座それぞれの純額（積み立て - 引き出し）を表示
   const ct={};
-  savings.forEach(e=>{
-    ct[e.savType]=(ct[e.savType]||0)+e.amount;
-  });
+  savings.forEach(e=>{ct[e.savType]=(ct[e.savType]||0)+e.amount;});
   const hasData=Object.values(ct).some(v=>v!==0);
-  if(!savings.length||!hasData){
-    document.getElementById('savBreakdown').innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:10px 0">データなし</p>';
-    return;
-  }
+  if(!savings.length||!hasData){document.getElementById('savBreakdown').innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:10px 0">データなし</p>';return;}
   const grossPos=savings.filter(e=>e.amount>0).reduce((s,e)=>s+e.amount,0)||1;
   const colors={cash:'#7ab840',account:'#4e8878'};
   document.getElementById('savBreakdown').innerHTML=
@@ -1060,7 +774,6 @@ function renderSavBreakdown(){
       const t=SAV_TYPES.find(x=>x.id===id)||SAV_TYPES[0];
       const col=colors[id]||'#a0a890';
       const isNeg=net<0;
-      // barは積み立て総額に対する比率（引き出し超過は0）
       const posForType=savings.filter(e=>e.savType===id&&e.amount>0).reduce((s,e)=>s+e.amount,0);
       const pct=Math.max(0,Math.round(posForType/grossPos*100));
       return `<div class="bd-item">
@@ -1074,34 +787,167 @@ function renderSavBreakdown(){
     }).join('');
 }
 
-// ── NAMES ──
-function updateNames(){
-  const a=document.getElementById('setNameA').value.trim()||'あなた';
-  const b=document.getElementById('setNameB').value.trim()||'パートナー';
-  names={A:a,B:b};
-  localStorage.setItem('kakeibo_names',JSON.stringify(names));
-  applyNames();
+// ════════════════════════════════
+// ── REPORT TAB ──
+// ════════════════════════════════
+function getRepRange(){
+  const val=document.getElementById('repRange').value;
+  const user=document.getElementById('repUser').value;
+  const now=new Date();
+  let filtered=expenses.filter(e=>e.amount>0);
+  if(user!=='all') filtered=filtered.filter(e=>e.user===user);
+  if(val==='all') return filtered;
+  const months=parseInt(val);
+  const cutoff=new Date(now.getFullYear(), now.getMonth()-months+1, 1);
+  return filtered.filter(e=>new Date(e.date)>=cutoff);
 }
-function applyNames(){
-  ['selNameA','savNameA'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=names.A;});
-  ['selNameB','savNameB'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=names.B;});
-  document.getElementById('lblA').textContent   =`${names.A}の支出`;
-  document.getElementById('lblB').textContent   =`${names.B}の支出`;
-  document.getElementById('savLblA').textContent=`${names.A}の累計`;
-  document.getElementById('savLblB').textContent=`${names.B}の累計`;
+
+function renderReport(){
+  const data=getRepRange();
+  const user=document.getElementById('repUser').value;
+
+  // 3-card summary
+  const total=data.reduce((s,e)=>s+e.amount,0);
+  const aD=data.filter(e=>e.user==='A'), bD=data.filter(e=>e.user==='B');
+  const aT=aD.reduce((s,e)=>s+e.amount,0), bT=bD.reduce((s,e)=>s+e.amount,0);
+  document.getElementById('repTotal').textContent=`¥${total.toLocaleString()}`;
+  document.getElementById('repTotalSub').textContent=`${data.length}件`;
+  document.getElementById('repAmtA').textContent=`¥${aT.toLocaleString()}`;
+  document.getElementById('repCntA').textContent=`${aD.length}件`;
+  document.getElementById('repAmtB').textContent=`¥${bT.toLocaleString()}`;
+  document.getElementById('repCntB').textContent=`${bD.length}件`;
+
+  // user stacked bar
+  const uStack=document.getElementById('repUserStack');
+  if(total>0){
+    const aPct=Math.round(aT/total*100), bPct=100-aPct;
+    uStack.innerHTML=`
+      <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--ink2);margin-bottom:6px">
+        <span>${NAMES.A}　¥${aT.toLocaleString()}（${aPct}%）</span>
+        <span>${NAMES.B}　¥${bT.toLocaleString()}（${bPct}%）</span>
+      </div>
+      <div class="stack-bar">
+        <div class="stack-a" style="width:${aPct}%"><span class="stack-lbl">${aPct>12?NAMES.A:''}</span></div>
+        <div class="stack-b" style="width:${bPct}%"><span class="stack-lbl">${bPct>12?NAMES.B:''}</span></div>
+      </div>`;
+  } else {
+    uStack.innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:8px 0">データなし</p>';
+  }
+
+  // ── donut chart (category breakdown) ──
+  const catMap={};
+  data.forEach(e=>{
+    const cat=CATS.find(c=>c.id===e.category)||{id:e.category,lbl:e.category,color:'#a0a890'};
+    if(!catMap[e.category]) catMap[e.category]={lbl:cat.lbl,color:cat.color,amt:0};
+    catMap[e.category].amt+=e.amount;
+  });
+  const catSorted=Object.values(catMap).sort((a,b)=>b.amt-a.amt);
+  const donutEl=document.getElementById('repDonut');
+  if(!catSorted.length||!total){
+    donutEl.innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:8px 0">データなし</p>';
+  } else {
+    const R=70, r=42, cx=90, cy=90;
+    let startAngle=-Math.PI/2;
+    const slices=catSorted.map(c=>{
+      const angle=(c.amt/total)*2*Math.PI;
+      const x1=cx+R*Math.cos(startAngle), y1=cy+R*Math.sin(startAngle);
+      startAngle+=angle;
+      const x2=cx+R*Math.cos(startAngle), y2=cy+R*Math.sin(startAngle);
+      const large=angle>Math.PI?1:0;
+      const ix1=cx+r*Math.cos(startAngle-angle), iy1=cy+r*Math.sin(startAngle-angle);
+      const ix2=cx+r*Math.cos(startAngle), iy2=cy+r*Math.sin(startAngle);
+      return `<path d="M${x1},${y1} A${R},${R} 0 ${large},1 ${x2},${y2} L${ix2},${iy2} A${r},${r} 0 ${large},0 ${ix1},${iy1} Z"
+        fill="${c.color}" stroke="white" stroke-width="1.5"/>`;
+    }).join('');
+    const legend=catSorted.map(c=>{
+      const pct=(c.amt/total*100).toFixed(0);
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;min-width:0">
+        <div style="width:9px;height:9px;border-radius:3px;background:${c.color};flex-shrink:0"></div>
+        <span style="font-size:0.72rem;color:var(--ink2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.lbl}</span>
+        <span style="font-size:0.7rem;color:var(--ink3);flex-shrink:0">${pct}%</span>
+        <span style="font-family:'Outfit',sans-serif;font-size:0.72rem;font-weight:600;color:var(--ink);flex-shrink:0">¥${c.amt.toLocaleString()}</span>
+      </div>`;
+    }).join('');
+    donutEl.innerHTML=`<div style="display:flex;align-items:flex-start;gap:16px;width:100%">
+      <div style="flex-shrink:0">
+        <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          ${slices}
+          <circle cx="${cx}" cy="${cy}" r="${r-2}" fill="white"/>
+          <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="10" fill="#a8ac98" font-family="Outfit,sans-serif">合計</text>
+          <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="11" fill="#272b1e" font-family="Outfit,sans-serif" font-weight="600">¥${total.toLocaleString()}</text>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;padding-top:8px">${legend}</div>
+    </div>`;
+
+  // monthly trend SVG line chart
+  const monthMap={};
+  data.forEach(e=>{
+    const k=mKey(e.date);
+    monthMap[k]=(monthMap[k]||0)+e.amount;
+  });
+  const months=Object.keys(monthMap).sort();
+  const repTrend=document.getElementById('repTrend');
+  if(months.length<2){
+    repTrend.innerHTML='<p style="font-size:0.74rem;color:var(--ink3);text-align:center;padding:8px 0">2ヶ月以上のデータで表示されます</p>';
+  } else {
+    const vals=months.map(k=>monthMap[k]);
+    const maxV=Math.max(...vals)||1;
+    const W=320, H=100, pad=8;
+    const pts=vals.map((v,i)=>{
+      const x=pad+(i/(vals.length-1))*(W-pad*2);
+      const y=H-pad-(v/maxV)*(H-pad*2);
+      return [x,y];
+    });
+    const pathD=pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+    const areaD=`${pathD} L${pts[pts.length-1][0]},${H} L${pts[0][0]},${H} Z`;
+    const labels=months.map((k,i)=>{
+      const [y,m]=k.split('-');
+      const x=pad+(i/(vals.length-1))*(W-pad*2);
+      return `<text x="${x}" y="${H+14}" text-anchor="middle" font-size="8" fill="#a8ac98">${m}月</text>`;
+    }).join('');
+    const dots=pts.map((p,i)=>
+      `<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#6e9632"/>
+       <title>¥${vals[i].toLocaleString()}</title>`
+    ).join('');
+    repTrend.innerHTML=`<svg class="trend-svg" viewBox="0 0 ${W} ${H+20}" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6e9632" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="#6e9632" stop-opacity="0.01"/>
+      </linearGradient></defs>
+      <path d="${areaD}" fill="url(#tg)"/>
+      <path d="${pathD}" fill="none" stroke="#6e9632" stroke-width="2" stroke-linejoin="round"/>
+      ${dots}${labels}
+    </svg>`;
+  }
+
+  // monthly table
+  const allMonths=[...new Set(expenses.map(e=>mKey(e.date)))].sort().reverse();
+  const rangeMonths=getRepRange();// re-use filtered
+  const tableMonths=[...new Set(rangeMonths.map(e=>mKey(e.date)))].sort().reverse();
+  // dynamic categories from data
+  const allCatIds=[...new Set(data.map(e=>e.category))];
+  const thead=`<thead><tr><th>月</th><th>合計</th><th>${NAMES.A}</th><th>${NAMES.B}</th></tr></thead>`;
+  const tbody=tableMonths.map(mk=>{
+    const me=data.filter(e=>mKey(e.date)===mk);
+    const tot=me.reduce((s,e)=>s+e.amount,0);
+    const aAmt=me.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0);
+    const bAmt=me.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0);
+    const [y,m]=mk.split('-');
+    return `<tr>
+      <td>${y}/${m}</td>
+      <td>¥${tot.toLocaleString()}</td>
+      <td>¥${aAmt.toLocaleString()}</td>
+      <td>¥${bAmt.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('repTable').innerHTML=thead+`<tbody>${tbody||'<tr><td colspan="4" style="text-align:center;color:var(--ink3);font-size:0.74rem;padding:16px">データなし</td></tr>'}</tbody>`;
 }
 
 // ── GAS ──
-function saveGasUrl(){
-  const v=document.getElementById('gasUrlInput').value.trim();
-  if(!v){showToast('URLを入力してください');return;}
-  gasUrl=v; localStorage.setItem('kakeibo_gas_url',gasUrl);
-  updateGasUI(); document.getElementById('gasDetail').open=false;
-  showToast('✓ スプレッドシート連携を保存しました！');
-}
 function updateGasUI(){
   const ok=!!gasUrl;
-  document.getElementById('hdrDot').className ='gdot'+(ok?' ok':'');
+  document.getElementById('hdrDot').className='gdot'+(ok?' ok':'');
   document.getElementById('hdrLabel').textContent=ok?'スプシ連携中':'スプシ未連携';
 }
 
