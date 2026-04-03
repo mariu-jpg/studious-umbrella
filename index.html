@@ -128,7 +128,7 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
 .e-right{text-align:right;flex-shrink:0}
 .e-amount{font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:600;color:var(--ink)}
 .e-utag{font-size:0.6rem;padding:2px 7px;border-radius:50px;margin-top:3px;display:inline-block}
-.e-utag.ua{background:var(--a-bg);color:var(--a-tx)} .e-utag.ub{background:var(--b-bg);color:var(--b-tx)}
+.e-utag.ua{background:var(--a-bg);color:var(--a-tx)} .e-utag.ub{background:var(--b-bg);color:var(--b-tx)} .e-utag.uc{background:var(--sav-bg);color:var(--sav-tx)}
 .e-del{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.78rem;padding:4px 5px;border-radius:7px;transition:all 0.18s;flex-shrink:0}
 .e-del:hover{color:#c04060;background:#fce8ee}
 
@@ -167,6 +167,31 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
 .month-table td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--ink)}
 .month-table td:nth-child(n+2){text-align:right;font-family:'Outfit',sans-serif;font-weight:500}
 
+/* 共通貯金ボタン */
+.user-sel-btn.uc .av{background:var(--sav)}
+.user-sel-btn.uc.active{background:var(--sav-bg);border-color:var(--sav-bd);color:var(--sav-tx)}
+
+/* MEMO TAB */
+.memo-form{background:var(--surface);border-radius:var(--r-card);padding:20px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:16px}
+.memo-type-row{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.memo-type-pill{padding:7px 14px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--sf2);font-size:0.76rem;cursor:pointer;transition:all 0.18s;color:var(--ink2);font-family:'Noto Sans JP',sans-serif}
+.memo-type-pill.selected{background:var(--sel-bg);border-color:var(--sel-bd);color:var(--sel-tx);font-weight:600}
+.memo-card{background:var(--surface);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:10px;animation:slideIn 0.26s ease}
+.memo-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.memo-card-title{font-size:0.88rem;font-weight:600;color:var(--ink)}
+.memo-card-meta{display:flex;gap:5px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.memo-card-type{font-size:0.6rem;padding:2px 7px;border-radius:50px;background:var(--sf2);color:var(--ink2)}
+.memo-card-body{font-size:0.78rem;color:var(--ink2);white-space:pre-wrap;line-height:1.55}
+.memo-card-date{font-size:0.6rem;color:var(--ink3);margin-top:6px}
+.memo-actions{display:flex;gap:5px}
+.memo-del{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.75rem;padding:4px 6px;border-radius:7px;transition:all 0.18s}
+.memo-del:hover{color:#c04060;background:#fce8ee}
+.memo-edit-btn{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.75rem;padding:4px 6px;border-radius:7px;transition:all 0.18s}
+.memo-edit-btn:hover{color:var(--accent-dk);background:var(--accent-bg)}
+.memo-filter-row{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}
+.memo-filter-pill{padding:5px 12px;border-radius:var(--r-pill);border:1.5px solid var(--border);background:var(--sf2);font-size:0.72rem;cursor:pointer;transition:all 0.18s;color:var(--ink2)}
+.memo-filter-pill.selected{background:var(--sel-bg);border-color:var(--sel-bd);color:var(--sel-tx);font-weight:600}
+textarea.text-input{resize:vertical;min-height:80px}
 .toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--ink);color:white;padding:11px 22px;border-radius:var(--r-pill);font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:500;z-index:999;transition:transform 0.26s ease}
 .toast.show{transform:translateX(-50%) translateY(0)}
 
@@ -188,10 +213,11 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
 </header>
 
 <main>
-  <div class="tab-bar">
+  <div class="tab-bar" style="grid-template-columns:1fr 1fr 1fr 1fr">
     <button class="tab-btn active" id="tabE" onclick="switchTab('expense')">支出</button>
     <button class="tab-btn"        id="tabS" onclick="switchTab('saving')">貯金</button>
     <button class="tab-btn"        id="tabR" onclick="switchTab('report')">収支</button>
+    <button class="tab-btn"        id="tabM" onclick="switchTab('memo')">メモ</button>
   </div>
 
   <div id="paneE" class="pane">
@@ -272,14 +298,7 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
   <div id="paneS" class="pane pane-hidden">
     <div class="card">
       <div class="sec-label">貯金を記録</div>
-      <div class="user-selector">
-        <button class="user-sel-btn ua active" id="savSelA" onclick="selectSavUser('A')">
-          <div class="av">A</div><span>やほ</span>
-        </button>
-        <button class="user-sel-btn ub" id="savSelB" onclick="selectSavUser('B')">
-          <div class="av">B</div><span>りとちゃ</span>
-        </button>
-      </div>
+      <div class="user-selector" id="savUserSelector" style="grid-template-columns:1fr 1fr 1fr"></div>
       <div class="row-btns" id="savSignRow"></div>
       <div class="row-btns" id="savTypeRow"></div>
       <div class="amount-row">
@@ -302,7 +321,7 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
           <div class="s-num" id="savMonthNum">¥0</div>
         </div>
       </div>
-      <div class="sav-user-split">
+      <div class="sav-user-split" style="grid-template-columns:1fr 1fr 1fr">
         <div class="sav-split-cell ua-cell">
           <div class="s-lbl">やほの累計</div>
           <div class="split-num">¥<span id="savAmtA">0</span></div>
@@ -310,6 +329,10 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
         <div class="sav-split-cell ub-cell">
           <div class="s-lbl">りとちゃの累計</div>
           <div class="split-num">¥<span id="savAmtB">0</span></div>
+        </div>
+        <div class="sav-split-cell" style="border-top:2px solid var(--sav-bd)">
+          <div class="s-lbl">共通の累計</div>
+          <div class="split-num">¥<span id="savAmtCommon">0</span></div>
         </div>
       </div>
     </div>
@@ -380,6 +403,21 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
       </div>
     </div>
   </div>
+
+  <!-- MEMO PANE -->
+  <div id="paneM" class="pane pane-hidden">
+    <div class="memo-form">
+      <div class="sec-label" id="memoFormLabel">メモを追加</div>
+      <input type="hidden" id="memoEditId" value="">
+      <input type="text" class="text-input" id="memoTitle" placeholder="タイトル（例：旅行計画、固定費メモ）">
+      <div class="memo-type-row" id="memoTypeRow"></div>
+      <textarea class="text-input" id="memoBody" placeholder="メモ内容を入力…"></textarea>
+      <button class="action-btn" id="memoSaveBtn" onclick="saveMemo()">📝　メモを保存する</button>
+    </div>
+    <div class="memo-filter-row" id="memoFilterRow"></div>
+    <div class="sec-label">メモ一覧</div>
+    <div id="memoList"></div>
+  </div>
 </main>
 <div class="toast" id="toast"></div>
 
@@ -393,12 +431,13 @@ const CATS = [
   {id:'food', lbl:'食費', color:'#7ab840'}, {id:'eat-out', lbl:'外食', color:'#c89830'},
   {id:'daily', lbl:'日用品', color:'#50a870'}, {id:'social', lbl:'交際', color:'#5090c8'},
   {id:'fashion', lbl:'被服・美容', color:'#c06090'}, {id:'date', lbl:'デート', color:'#e08040'},
-  {id:'utility', lbl:'光熱費', color:'#90a840'}, {id:'rent', lbl:'家賃', color:'#6878b8'},
-  {id:'other', lbl:'その他', color:'#a0a890'},
+  {id:'utility', lbl:'公共料金', color:'#90a840'}, {id:'rent', lbl:'家賃', color:'#6878b8'},
+  {id:'medicine', lbl:'薬', color:'#e07070'}, {id:'other', lbl:'その他', color:'#a0a890'},
 ];
 const PAYS = [{id:'cash',lbl:'現金'},{id:'ic',lbl:'キャッシュレス'},{id:'credit',lbl:'クレカ'}];
 const SAV_TYPES= [{id:'cash',lbl:'現金'},{id:'account',lbl:'口座'}];
 const SAV_SIGNS= [{id:'plus',lbl:'＋ 積み立て'},{id:'minus',lbl:'ー 引き出し'}];
+const SAV_NAMES= [{id:'A',lbl:'やほ'},{id:'B',lbl:'りとちゃ'},{id:'common',lbl:'共通'}];
 
 // ── STATE ──
 let currentExpUser='A', currentSavUser='A';
@@ -413,9 +452,10 @@ savings = savings.filter(s => !Number.isNaN(new Date(s.date).getTime()));
 
 function init(){
   renderCats(); renderPayBtns(); renderSavTypeBtns(); renderSavSignBtns();
+  selectSavUser('A');
   updateMonthTitle(); updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries();
   updateSavSummary(); renderSavBreakdown(); renderSavEntries();
-  updateGasUI();
+  updateGasUI(); updateMemoList();
 }
 
 // ── TABS (バグ修正) ──
@@ -423,12 +463,15 @@ function switchTab(tab){
   document.getElementById('paneE').classList.toggle('pane-hidden', tab !== 'expense');
   document.getElementById('paneS').classList.toggle('pane-hidden', tab !== 'saving');
   document.getElementById('paneR').classList.toggle('pane-hidden', tab !== 'report');
+  document.getElementById('paneM').classList.toggle('pane-hidden', tab !== 'memo');
   
   document.getElementById('tabE').classList.toggle('active', tab === 'expense');
   document.getElementById('tabS').classList.toggle('active', tab === 'saving');
   document.getElementById('tabR').classList.toggle('active', tab === 'report');
+  document.getElementById('tabM').classList.toggle('active', tab === 'memo');
 
   if(tab === 'report') renderReport();
+  if(tab === 'memo') updateMemoList();
 }
 
 // ── SELECTIONS ──
@@ -448,7 +491,13 @@ function selSavSignFn(id){
   ind.className = 'sign-indicator '+(id==='plus'?'plus':'minus');
 }
 function selectExpUser(u){ currentExpUser=u; document.getElementById('expSelA').classList.toggle('active',u==='A'); document.getElementById('expSelB').classList.toggle('active',u==='B'); }
-function selectSavUser(u){ currentSavUser=u; document.getElementById('savSelA').classList.toggle('active',u==='A'); document.getElementById('savSelB').classList.toggle('active',u==='B'); }
+function selectSavUser(u){
+  currentSavUser=u;
+  document.getElementById('savUserSelector').innerHTML=SAV_NAMES.map(n=>{
+    const cls = n.id==='A'?'ua':n.id==='B'?'ub':'uc';
+    return `<button class="user-sel-btn ${cls}${n.id===u?' active':''}" onclick="selectSavUser('${n.id}')"><div class="av">${n.id==='common'?'共':n.id}</div><span>${n.lbl}</span></button>`;
+  }).join('');
+}
 
 // ── MONTH ──
 function changeMonth(d){ currentMonth.setMonth(currentMonth.getMonth()+d); updateMonthTitle(); updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries(); }
@@ -495,7 +544,7 @@ async function addSaving(){
     const btn=document.getElementById('savAddBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
       await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:NAMES[currentSavUser], savType:st.lbl, amount:signedAmt, memo:memo})});
+        body:JSON.stringify({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:currentSavUser==='common'?'共通':(NAMES[currentSavUser]||currentSavUser), savType:st.lbl, amount:signedAmt, memo:memo})});
       showToast('記録完了＆スプシ送信 ✓');
     }catch{showToast('記録完了 (スプシ送信エラー)');}
     finally{btn.disabled=false; btn.innerHTML='記録する';}
@@ -557,11 +606,16 @@ function renderWeeklyExp() {
 
 function updateSavSummary(){
   const total=savings.reduce((s,e)=>s+e.amount,0), mTotal=mSavings().reduce((s,e)=>s+e.amount,0);
-  const aT=savings.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0), bT=savings.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0);
+  const aT=savings.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0);
+  const bT=savings.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0);
+  const cT=savings.filter(e=>e.user==='common').reduce((s,e)=>s+e.amount,0);
   document.getElementById('savTotalNum').textContent=`¥${Math.abs(total).toLocaleString()}`; document.getElementById('savTotalNum').className='s-num'+(total<0?' negative':'');
   document.getElementById('savMonthLbl').textContent=`${currentMonth.getMonth()+1}月の貯金`;
   document.getElementById('savMonthNum').textContent=`${mTotal<0?'−':''}¥${Math.abs(mTotal).toLocaleString()}`; document.getElementById('savMonthNum').className='s-num'+(mTotal<0?' negative':'');
-  document.getElementById('savAmtA').textContent=aT.toLocaleString(); document.getElementById('savAmtB').textContent=bT.toLocaleString();
+  document.getElementById('savAmtA').textContent=aT.toLocaleString();
+  document.getElementById('savAmtB').textContent=bT.toLocaleString();
+  const commonCell = document.getElementById('savAmtCommon');
+  if(commonCell) commonCell.textContent=cT.toLocaleString();
 }
 
 function renderExpEntries(){
@@ -586,7 +640,9 @@ function renderSavEntries(){
   });
   list.innerHTML=Object.entries(g).map(([date,items])=>`<div class="date-grp"><div class="date-lbl">${date}</div>${items.map(e=>{
     const st=SAV_TYPES.find(t=>t.id===e.savType)||SAV_TYPES[0], neg=e.amount<0;
-    return `<div class="entry-item"><div class="e-dot" style="background:${neg?'var(--sav)':'var(--sav-bd)'}"></div><div class="e-info"><div class="e-name">${neg?'引出':'積立'}</div><div class="e-meta"><span class="e-tag">${st.lbl}</span> ${e.memo}</div></div><div class="e-right"><div class="e-amount${neg?' negative':''}">${neg?'−':'＋'}¥${Math.abs(e.amount).toLocaleString()}</div><div class="e-utag ${e.user==='A'?'ua':'ub'}">${NAMES[e.user]}</div></div><button class="e-del" onclick="deleteItem('sav',${e.id})">✕</button></div>`;
+    const uCls=e.user==='A'?'ua':e.user==='B'?'ub':'uc';
+    const uLbl=e.user==='common'?'共通':(NAMES[e.user]||e.user);
+    return `<div class="entry-item"><div class="e-dot" style="background:${neg?'var(--sav)':'var(--sav-bd)'}"></div><div class="e-info"><div class="e-name">${neg?'引出':'積立'}</div><div class="e-meta"><span class="e-tag">${st.lbl}</span> ${e.memo||''}</div></div><div class="e-right"><div class="e-amount${neg?' negative':''}">${neg?'−':'＋'}¥${Math.abs(e.amount).toLocaleString()}</div><div class="e-utag ${uCls}">${uLbl}</div></div><button class="e-del" onclick="deleteItem('sav',${e.id})">✕</button></div>`;
   }).join('')}</div>`).join('');
 }
 
@@ -718,6 +774,136 @@ function renderReport(){
     const me=currentData.filter(e=>mKey(e.date)===mk);
     return `<tr><td>${mk.replace('-','/')}</td><td>¥${me.reduce((s,e)=>s+e.amount,0).toLocaleString()}</td><td>¥${me.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0).toLocaleString()}</td><td>¥${me.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0).toLocaleString()}</td></tr>`;
   }).join('')||'<tr><td colspan="4" style="text-align:center;padding:10px">データなし</td></tr>'}</tbody>`;
+}
+
+// ── MEMO FEATURE ──
+const MEMO_TYPES = [
+  {id:'all', lbl:'すべて'},
+  {id:'expense', lbl:'支出'},
+  {id:'saving', lbl:'貯金'},
+  {id:'other', lbl:'その他'},
+];
+let memos = JSON.parse(localStorage.getItem('kakeibo_memos')||'[]');
+let selMemoType = 'other';
+let memoFilter = 'all';
+
+function renderMemoTypeRow(){
+  const types = MEMO_TYPES.filter(t => t.id !== 'all');
+  document.getElementById('memoTypeRow').innerHTML = types.map(t =>
+    `<div class="memo-type-pill${t.id===selMemoType?' selected':''}" onclick="selMemoTypeFn('${t.id}')">${t.lbl}</div>`
+  ).join('');
+}
+function selMemoTypeFn(id){ selMemoType=id; renderMemoTypeRow(); }
+
+function renderMemoFilterRow(){
+  const topTypes = [{id:'all',lbl:'すべて'},{id:'expense',lbl:'支出'},{id:'saving',lbl:'貯金'},{id:'other',lbl:'その他'}];
+  document.getElementById('memoFilterRow').innerHTML = topTypes.map(t =>
+    `<div class="memo-filter-pill${t.id===memoFilter?' selected':''}" onclick="setMemoFilter('${t.id}')">${t.lbl}</div>`
+  ).join('');
+}
+function setMemoFilter(f){ memoFilter=f; renderMemoFilterRow(); renderMemoCards(); }
+
+function updateMemoList(){
+  renderMemoTypeRow();
+  renderMemoFilterRow();
+  renderMemoCards();
+}
+
+function getMemoTypeLabel(typeId){
+  const t = MEMO_TYPES.find(x=>x.id===typeId);
+  return t ? t.lbl.replace(/　└ /,'') : typeId;
+}
+function getMemoTopType(typeId){
+  if(typeId==='other' || typeId==='general') return 'other'; // general is legacy
+  if(typeId==='expense' || typeId.startsWith('exp_')) return 'expense';
+  if(typeId==='saving' || typeId.startsWith('sav_')) return 'saving';
+  return 'other';
+}
+
+function renderMemoCards(){
+  const list = document.getElementById('memoList');
+  let filtered = memos.slice().sort((a,b)=>b.id-a.id);
+  if(memoFilter !== 'all'){
+    filtered = filtered.filter(m => getMemoTopType(m.type) === memoFilter);
+  }
+  if(!filtered.length){
+    list.innerHTML='<div class="empty"><div class="em">📝</div><p>メモなし</p></div>'; return;
+  }
+  list.innerHTML = filtered.map(m => {
+    const d = new Date(m.id);
+    const dateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const topType = getMemoTopType(m.type);
+    const typeBg = topType==='expense'?'var(--a-bg)':topType==='saving'?'var(--sav-bg)':'var(--sf2)';
+    const typeTx = topType==='expense'?'var(--a-tx)':topType==='saving'?'var(--sav-tx)':'var(--ink2)';
+    return `<div class="memo-card">
+      <div class="memo-card-header">
+        <div class="memo-card-title">${escHtml(m.title||'（無題）')}</div>
+        <div class="memo-actions">
+          <button class="memo-edit-btn" onclick="editMemo(${m.id})">✏️</button>
+          <button class="memo-del" onclick="deleteMemo(${m.id})">✕</button>
+        </div>
+      </div>
+      <div class="memo-card-meta">
+        <span class="memo-card-type" style="background:${typeBg};color:${typeTx}">${getMemoTypeLabel(m.type)}</span>
+      </div>
+      <div class="memo-card-body">${escHtml(m.body||'')}</div>
+      <div class="memo-card-date">${dateStr}${m.updated?' · 更新済':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function saveMemo(){
+  const title = document.getElementById('memoTitle').value.trim();
+  const body  = document.getElementById('memoBody').value.trim();
+  const editId = document.getElementById('memoEditId').value;
+  if(!title && !body){ showToast('タイトルか内容を入力してください'); return; }
+  const btn = document.getElementById('memoSaveBtn');
+
+  if(editId){
+    const idx = memos.findIndex(m=>m.id===parseInt(editId));
+    if(idx>=0){ memos[idx] = {...memos[idx], title, body, type:selMemoType, updated:true}; }
+    document.getElementById('memoEditId').value='';
+    document.getElementById('memoFormLabel').textContent='メモを追加';
+    btn.textContent='📝　メモを保存する';
+  } else {
+    const id = Date.now();
+    memos.push({id, title, body, type:selMemoType});
+    if(GAS_URL){
+      btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
+      try{
+        await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({sheet:'メモ', id, title, type:getMemoTypeLabel(selMemoType), body})});
+      }catch{}
+      finally{btn.disabled=false; btn.innerHTML='📝　メモを保存する';}
+    }
+  }
+  localStorage.setItem('kakeibo_memos',JSON.stringify(memos));
+  document.getElementById('memoTitle').value='';
+  document.getElementById('memoBody').value='';
+  renderMemoCards();
+  showToast('メモを保存しました ✓');
+}
+
+function editMemo(id){
+  const m = memos.find(x=>x.id===id); if(!m) return;
+  document.getElementById('memoTitle').value = m.title||'';
+  document.getElementById('memoBody').value  = m.body||'';
+  document.getElementById('memoEditId').value = id;
+  selMemoType = m.type||'general';
+  renderMemoTypeRow();
+  document.getElementById('memoFormLabel').textContent='メモを編集';
+  document.getElementById('memoSaveBtn').textContent='💾　更新する';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function deleteMemo(id){
+  memos = memos.filter(m=>m.id!==id);
+  localStorage.setItem('kakeibo_memos',JSON.stringify(memos));
+  renderMemoCards();
+  if(GAS_URL){ try{ await fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'delete',sheet:'メモ',id})}); }catch{} }
+  showToast('削除しました');
 }
 
 function updateGasUI(){
