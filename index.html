@@ -207,8 +207,9 @@ textarea.text-input{resize:vertical;min-height:80px}
 <body>
 
 <header>
-  <div class="header-inner">
-    <div class="gas-chip"><div class="gdot" id="hdrDot"></div><span id="hdrLabel">連携確認中...</span></div>
+  <div class="header-inner" style="justify-content:space-between">
+    <button onclick="reloadData()" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--ink3);padding:4px 8px;border-radius:8px" title="データを更新">↺</button>
+    <div class="gas-chip"><div class="gdot" id="hdrDot"></div><span id="hdrLabel">読み込み中...</span></div>
   </div>
 </header>
 
@@ -442,21 +443,95 @@ const SAV_NAMES= [{id:'A',lbl:'やほ'},{id:'B',lbl:'りとちゃ'},{id:'common'
 // ── STATE ──
 let currentExpUser='A', currentSavUser='A';
 let currentMonth = new Date(); currentMonth.setDate(1);
-let expenses = JSON.parse(localStorage.getItem('kakeibo_expenses')||'[]');
-let savings = JSON.parse(localStorage.getItem('kakeibo_savings') ||'[]');
+let expenses = [];
+let savings  = [];
 let selCat='food', selPay='cash', selSavType='cash', selSavSign='plus';
 
-// 不正な日付のクリーニング処理
-expenses = expenses.filter(e => !Number.isNaN(new Date(e.date).getTime()));
-savings = savings.filter(s => !Number.isNaN(new Date(s.date).getTime()));
-
-function init(){
+// ── INIT: GASから全データ読み込み ──
+async function init(){
   renderCats(); renderPayBtns(); renderSavTypeBtns(); renderSavSignBtns();
   selectSavUser('A');
-  updateMonthTitle(); updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries();
-  updateSavSummary(); renderSavBreakdown(); renderSavEntries();
-  updateGasUI(); updateMemoList();
+  updateMonthTitle();
+  updateGasUI();
+  await loadFromGAS();
 }
+
+async function loadFromGAS(){
+  if(!GAS_URL){ renderAll(); return; }
+  setLoading(true);
+  try{
+    const res = await fetch(GAS_URL + '?t=' + Date.now());
+    const json = await res.json();
+
+    // 家計簿
+    expenses = (json['家計簿'] || []).map(r => ({
+      id:       Number(r.id),
+      amount:   Number(r.amount),
+      category: catIdFromLbl(r.category),
+      payment:  payIdFromLbl(r.payment),
+      memo:     r.memo || '',
+      user:     userIdFromName(r.user),
+      date:     gasDateToISO(r.date),
+    })).filter(e => e.amount > 0 && !isNaN(new Date(e.date).getTime()));
+
+    // 貯金
+    savings = (json['貯金'] || []).map(r => ({
+      id:      Number(r.id),
+      amount:  Number(r.amount),
+      savType: savTypeIdFromLbl(r.savType),
+      memo:    r.memo || '',
+      user:    savUserIdFromName(r.user),
+      date:    gasDateToISO(r.date),
+    })).filter(s => !isNaN(new Date(s.date).getTime()));
+
+    // メモ
+    memos = (json['メモ'] || []).map(r => ({
+      id:      Number(r.id),
+      title:   r.title || '',
+      type:    r.type  || 'other',
+      body:    r.body  || '',
+      updated: !!r.updated,
+    }));
+
+    showToast('データを読み込みました ✓');
+  }catch(err){
+    console.error(err);
+    showToast('読み込みエラー。再度お試しください');
+  }finally{
+    setLoading(false);
+    renderAll();
+  }
+}
+
+function renderAll(){
+  updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries();
+  updateSavSummary(); renderSavBreakdown(); renderSavEntries();
+  updateMemoList();
+}
+
+function setLoading(on){
+  const lbl = document.getElementById('hdrLabel');
+  if(on){ lbl.textContent='読み込み中…'; }
+  else  { updateGasUI(); }
+}
+
+// GASのdate文字列（"2025/4/3"）→ ISO文字列
+function gasDateToISO(d){
+  if(!d) return new Date().toISOString();
+  // すでにISO形式の場合はそのまま
+  if(String(d).includes('T')) return d;
+  const parts = String(d).split('/');
+  if(parts.length === 3) return new Date(parts[0], parts[1]-1, parts[2]).toISOString();
+  return new Date(d).toISOString();
+}
+
+// ラベル→ID変換ヘルパー
+function catIdFromLbl(lbl){ const c=CATS.find(x=>x.lbl===lbl); return c?c.id:'other'; }
+function payIdFromLbl(lbl){ const p=PAYS.find(x=>x.lbl===lbl); return p?p.id:'cash'; }
+function savTypeIdFromLbl(lbl){ const t=SAV_TYPES.find(x=>x.lbl===lbl); return t?t.id:'cash'; }
+function userIdFromName(name){ if(name===NAMES.A) return 'A'; if(name===NAMES.B) return 'B'; return 'A'; }
+function savUserIdFromName(name){ if(name==='共通') return 'common'; return userIdFromName(name); }
+
 
 // ── TABS (バグ修正) ──
 function switchTab(tab){
@@ -512,21 +587,24 @@ async function addExpense(){
   const memo=document.getElementById('expMemo').value.trim();
   if(!amt||amt<=0){showToast('金額を入力してください');return;}
   const now=new Date(), days=['日','月','火','水','木','金','土'];
-  const cat=CATS.find(c=>c.id===selCat)||CATS[8], pay=PAYS.find(p=>p.id===selPay)||PAYS[0];
+  const cat=CATS.find(c=>c.id===selCat)||CATS[CATS.length-1];
+  const pay=PAYS.find(p=>p.id===selPay)||PAYS[0];
   const id=Date.now();
+
+  // 楽観的UI更新
   expenses.push({id, amount:amt, category:selCat, payment:selPay, memo, user:currentExpUser, date:now.toISOString()});
-  localStorage.setItem('kakeibo_expenses',JSON.stringify(expenses));
   document.getElementById('expAmount').value=''; document.getElementById('expMemo').value='';
   updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries();
+
   if(GAS_URL){
     const btn=document.getElementById('expAddBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
-      await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'家計簿', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:NAMES[currentExpUser], category:cat.lbl, payment:pay.lbl, amount:amt, memo:memo})});
-      showToast('追加完了＆スプシ送信 ✓');
-    }catch{showToast('追加完了 (スプシ送信エラー)');}
-    finally{btn.disabled=false; btn.innerHTML='＋　支出を追加する';}
-  }else{showToast('追加完了 ✓ (スプシ未連携)');}
+      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sheet:'家計簿', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:NAMES[currentExpUser], category:cat.lbl, payment:pay.lbl, amount:amt, memo})});
+      showToast('追加完了 ✓');
+    }catch{ showToast('送信エラー。再度お試しください'); }
+    finally{ btn.disabled=false; btn.innerHTML='＋　支出を追加する'; }
+  }else{ showToast('追加完了 ✓ (スプシ未連携)'); }
 }
 
 async function addSaving(){
@@ -534,32 +612,38 @@ async function addSaving(){
   const memo=document.getElementById('savMemo').value.trim();
   if(!absAmt||absAmt<=0){showToast('金額を入力してください');return;}
   const signedAmt=selSavSign==='minus'?-absAmt:absAmt;
-  const now=new Date(), days=['日','月','火','水','木','金','土'], st=SAV_TYPES.find(t=>t.id===selSavType)||SAV_TYPES[0];
+  const now=new Date(), days=['日','月','火','水','木','金','土'];
+  const st=SAV_TYPES.find(t=>t.id===selSavType)||SAV_TYPES[0];
   const id=Date.now();
+
+  // 楽観的UI更新
   savings.push({id, amount:signedAmt, savType:selSavType, memo, user:currentSavUser, date:now.toISOString()});
-  localStorage.setItem('kakeibo_savings',JSON.stringify(savings));
   document.getElementById('savAmount').value=''; document.getElementById('savMemo').value='';
   updateSavSummary(); renderSavBreakdown(); renderSavEntries();
+
   if(GAS_URL){
     const btn=document.getElementById('savAddBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
-      await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:currentSavUser==='common'?'共通':(NAMES[currentSavUser]||currentSavUser), savType:st.lbl, amount:signedAmt, memo:memo})});
-      showToast('記録完了＆スプシ送信 ✓');
-    }catch{showToast('記録完了 (スプシ送信エラー)');}
-    finally{btn.disabled=false; btn.innerHTML='記録する';}
-  }else{showToast('記録完了 ✓');}
+      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:currentSavUser==='common'?'共通':(NAMES[currentSavUser]||currentSavUser), savType:st.lbl, amount:signedAmt, memo})});
+      showToast('記録完了 ✓');
+    }catch{ showToast('送信エラー。再度お試しください'); }
+    finally{ btn.disabled=false; btn.innerHTML='記録する'; }
+  }else{ showToast('記録完了 ✓'); }
 }
 
 async function deleteItem(type, id){
   if(type==='exp'){
-    expenses = expenses.filter(e=>e.id!==id); localStorage.setItem('kakeibo_expenses',JSON.stringify(expenses));
+    expenses = expenses.filter(e=>e.id!==id);
     updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries();
   }else{
-    savings = savings.filter(s=>s.id!==id); localStorage.setItem('kakeibo_savings',JSON.stringify(savings));
+    savings = savings.filter(s=>s.id!==id);
     updateSavSummary(); renderSavBreakdown(); renderSavEntries();
   }
-  if(GAS_URL){ try{ await fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'delete', sheet:type==='exp'?'家計簿':'貯金', id})}); }catch{} }
+  if(GAS_URL){
+    try{ await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete', sheet:type==='exp'?'家計簿':'貯金', id})}); }catch{}
+  }
   showToast('削除しました');
 }
 
@@ -855,35 +939,43 @@ function renderMemoCards(){
 function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 async function saveMemo(){
-  const title = document.getElementById('memoTitle').value.trim();
-  const body  = document.getElementById('memoBody').value.trim();
+  const title  = document.getElementById('memoTitle').value.trim();
+  const body   = document.getElementById('memoBody').value.trim();
   const editId = document.getElementById('memoEditId').value;
   if(!title && !body){ showToast('タイトルか内容を入力してください'); return; }
   const btn = document.getElementById('memoSaveBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
 
-  if(editId){
-    const idx = memos.findIndex(m=>m.id===parseInt(editId));
-    if(idx>=0){ memos[idx] = {...memos[idx], title, body, type:selMemoType, updated:true}; }
-    document.getElementById('memoEditId').value='';
-    document.getElementById('memoFormLabel').textContent='メモを追加';
-    btn.textContent='📝　メモを保存する';
-  } else {
-    const id = Date.now();
-    memos.push({id, title, body, type:selMemoType});
-    if(GAS_URL){
-      btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
-      try{
-        await fetch(GAS_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({sheet:'メモ', id, title, type:getMemoTypeLabel(selMemoType), body})});
-      }catch{}
-      finally{btn.disabled=false; btn.innerHTML='📝　メモを保存する';}
+  try{
+    if(editId){
+      // 編集
+      const id = parseInt(editId);
+      const idx = memos.findIndex(m=>m.id===id);
+      if(idx>=0){ memos[idx] = {...memos[idx], title, body, type:selMemoType, updated:true}; }
+      if(GAS_URL){
+        await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({action:'update', sheet:'メモ', id, title, type:selMemoType, body, updated:true})});
+      }
+      document.getElementById('memoEditId').value='';
+      document.getElementById('memoFormLabel').textContent='メモを追加';
+    } else {
+      // 新規
+      const id = Date.now();
+      memos.push({id, title, body, type:selMemoType});
+      if(GAS_URL){
+        await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({sheet:'メモ', id, title, type:selMemoType, body, updated:''})});
+      }
     }
+    document.getElementById('memoTitle').value='';
+    document.getElementById('memoBody').value='';
+    renderMemoCards();
+    showToast('メモを保存しました ✓');
+  }catch{
+    showToast('送信エラー。再度お試しください');
+  }finally{
+    btn.disabled=false; btn.innerHTML='📝　メモを保存する';
   }
-  localStorage.setItem('kakeibo_memos',JSON.stringify(memos));
-  document.getElementById('memoTitle').value='';
-  document.getElementById('memoBody').value='';
-  renderMemoCards();
-  showToast('メモを保存しました ✓');
 }
 
 function editMemo(id){
@@ -891,7 +983,7 @@ function editMemo(id){
   document.getElementById('memoTitle').value = m.title||'';
   document.getElementById('memoBody').value  = m.body||'';
   document.getElementById('memoEditId').value = id;
-  selMemoType = m.type||'general';
+  selMemoType = m.type||'other';
   renderMemoTypeRow();
   document.getElementById('memoFormLabel').textContent='メモを編集';
   document.getElementById('memoSaveBtn').textContent='💾　更新する';
@@ -900,10 +992,19 @@ function editMemo(id){
 
 async function deleteMemo(id){
   memos = memos.filter(m=>m.id!==id);
-  localStorage.setItem('kakeibo_memos',JSON.stringify(memos));
   renderMemoCards();
-  if(GAS_URL){ try{ await fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'delete',sheet:'メモ',id})}); }catch{} }
+  if(GAS_URL){
+    try{ await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'delete',sheet:'メモ',id})}); }catch{}
+  }
   showToast('削除しました');
+}
+
+// ── 手動リロードボタン ──
+function reloadData(){
+  expenses=[]; savings=[]; memos=[];
+  loadFromGAS();
+  showToast('更新中…');
 }
 
 function updateGasUI(){
