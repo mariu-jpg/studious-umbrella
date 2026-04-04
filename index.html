@@ -460,8 +460,7 @@ async function loadFromGAS(){
   if(!GAS_URL){ renderAll(); return; }
   setLoading(true);
   try{
-    const res = await fetch(GAS_URL + '?t=' + Date.now());
-    const json = await res.json();
+    const json = await fetchJSONP(GAS_URL);
 
     // 家計簿
     expenses = (json['家計簿'] || []).map(r => ({
@@ -501,6 +500,33 @@ async function loadFromGAS(){
     setLoading(false);
     renderAll();
   }
+}
+
+// JSONP でGASのGETを呼ぶ（CORSを回避）
+function fetchJSONP(url){
+  return new Promise((resolve, reject) => {
+    const cb = 'cb_' + Date.now();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup(); reject(new Error('JSONP timeout'));
+    }, 10000);
+    function cleanup(){ delete window[cb]; document.head.removeChild(script); clearTimeout(timer); }
+    window[cb] = (data) => { cleanup(); resolve(data); };
+    script.src = url + '?callback=' + cb + '&t=' + Date.now();
+    script.onerror = () => { cleanup(); reject(new Error('JSONP error')); };
+    document.head.appendChild(script);
+  });
+}
+
+// POST系はすべて no-cors（レスポンスは読めないが書き込みはできる）
+async function gasPost(payload){
+  if(!GAS_URL) return;
+  await fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload),
+  });
 }
 
 function renderAll(){
@@ -599,8 +625,7 @@ async function addExpense(){
   if(GAS_URL){
     const btn=document.getElementById('expAddBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
-      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'家計簿', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:NAMES[currentExpUser], category:cat.lbl, payment:pay.lbl, amount:amt, memo})});
+      await gasPost({sheet:'家計簿', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:NAMES[currentExpUser], category:cat.lbl, payment:pay.lbl, amount:amt, memo});
       showToast('追加完了 ✓');
     }catch{ showToast('送信エラー。再度お試しください'); }
     finally{ btn.disabled=false; btn.innerHTML='＋　支出を追加する'; }
@@ -624,8 +649,7 @@ async function addSaving(){
   if(GAS_URL){
     const btn=document.getElementById('savAddBtn'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>送信中…';
     try{
-      await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:currentSavUser==='common'?'共通':(NAMES[currentSavUser]||currentSavUser), savType:st.lbl, amount:signedAmt, memo})});
+      await gasPost({sheet:'貯金', id, date:`${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()}`, weekday:days[now.getDay()], user:currentSavUser==='common'?'共通':(NAMES[currentSavUser]||currentSavUser), savType:st.lbl, amount:signedAmt, memo});
       showToast('記録完了 ✓');
     }catch{ showToast('送信エラー。再度お試しください'); }
     finally{ btn.disabled=false; btn.innerHTML='記録する'; }
@@ -641,8 +665,7 @@ async function deleteItem(type, id){
     updateSavSummary(); renderSavBreakdown(); renderSavEntries();
   }
   if(GAS_URL){
-    try{ await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'delete', sheet:type==='exp'?'家計簿':'貯金', id})}); }catch{}
+    try{ await gasPost({action:'delete', sheet:type==='exp'?'家計簿':'貯金', id}); }catch{}
   }
   showToast('削除しました');
 }
@@ -953,8 +976,7 @@ async function saveMemo(){
       const idx = memos.findIndex(m=>m.id===id);
       if(idx>=0){ memos[idx] = {...memos[idx], title, body, type:selMemoType, updated:true}; }
       if(GAS_URL){
-        await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({action:'update', sheet:'メモ', id, title, type:selMemoType, body, updated:true})});
+        await gasPost({action:'update', sheet:'メモ', id, title, type:selMemoType, body, updated:true});
       }
       document.getElementById('memoEditId').value='';
       document.getElementById('memoFormLabel').textContent='メモを追加';
@@ -963,8 +985,7 @@ async function saveMemo(){
       const id = Date.now();
       memos.push({id, title, body, type:selMemoType});
       if(GAS_URL){
-        await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({sheet:'メモ', id, title, type:selMemoType, body, updated:''})});
+        await gasPost({sheet:'メモ', id, title, type:selMemoType, body, updated:''});
       }
     }
     document.getElementById('memoTitle').value='';
@@ -994,8 +1015,7 @@ async function deleteMemo(id){
   memos = memos.filter(m=>m.id!==id);
   renderMemoCards();
   if(GAS_URL){
-    try{ await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'delete',sheet:'メモ',id})}); }catch{}
+    try{ await gasPost({action:'delete',sheet:'メモ',id}); }catch{}
   }
   showToast('削除しました');
 }
