@@ -456,7 +456,7 @@ async function init(){
   await loadFromGAS();
 }
 
-async function loadFromGAS(){
+async function loadFromGAS(retry = 0){
   if(!GAS_URL){ renderAll(); return; }
   setLoading(true);
   try{
@@ -494,26 +494,53 @@ async function loadFromGAS(){
 
     showToast('データを読み込みました ✓');
   }catch(err){
-    console.error(err);
-    showToast('読み込みエラー。再度お試しください');
+    console.error('loadFromGAS error:', err);
+    if(retry < 2){
+      // 最大2回リトライ
+      setTimeout(() => loadFromGAS(retry + 1), 2000);
+      return;
+    }
+    showToast('読み込みに失敗しました。↺ボタンで再試行してください');
   }finally{
     setLoading(false);
     renderAll();
   }
 }
 
-// JSONP でGASのGETを呼ぶ（CORSを回避）
-function fetchJSONP(url){
+// JSONP でGASのGETを呼ぶ（CORSを回避・リダイレクト対応）
+function fetchJSONP(url, timeoutMs = 15000){
   return new Promise((resolve, reject) => {
-    const cb = 'cb_' + Date.now();
-    const script = document.createElement('script');
+    const cbName = '_gas_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+    const script  = document.createElement('script');
+    let done = false;
+
     const timer = setTimeout(() => {
-      cleanup(); reject(new Error('JSONP timeout'));
-    }, 10000);
-    function cleanup(){ delete window[cb]; document.head.removeChild(script); clearTimeout(timer); }
-    window[cb] = (data) => { cleanup(); resolve(data); };
-    script.src = url + '?callback=' + cb + '&t=' + Date.now();
-    script.onerror = () => { cleanup(); reject(new Error('JSONP error')); };
+      if(done) return;
+      done = true;
+      cleanup();
+      reject(new Error('JSONP timeout'));
+    }, timeoutMs);
+
+    function cleanup(){
+      delete window[cbName];
+      clearTimeout(timer);
+      if(script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data){
+      if(done) return;
+      done = true;
+      cleanup();
+      resolve(data);
+    };
+
+    script.src = url + (url.includes('?')?'&':'?') + 'callback=' + cbName + '&t=' + Date.now();
+    script.onerror = function(){
+      if(done) return;
+      done = true;
+      cleanup();
+      reject(new Error('JSONP script error'));
+    };
     document.head.appendChild(script);
   });
 }
