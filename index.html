@@ -94,6 +94,13 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
 .split-cell.ua-cell, .sav-split-cell.ua-cell{border-top:2px solid var(--a-bd)}
 .split-cell.ub-cell, .sav-split-cell.ub-cell{border-top:2px solid var(--b-bd)}
 .split-num{font-family:'Outfit',sans-serif;font-size:1.1rem;font-weight:600;color:var(--ink)}
+.split-sub{font-size:0.65rem;color:var(--ink3);margin-top:3px}
+.settle-row{border-top:1px dashed var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.settle-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--r-pill);font-size:0.78rem;font-weight:600;font-family:'Outfit',sans-serif}
+.settle-chip.send-a{background:var(--a-bg);color:var(--a-tx);border:1px solid var(--a-bd)}
+.settle-chip.send-b{background:var(--b-bg);color:var(--b-tx);border:1px solid var(--b-bd)}
+.settle-chip.even{background:var(--accent-bg);color:var(--accent-dk);border:1px solid var(--sel-bd)}
+.settle-arrow{font-size:0.9rem;color:var(--ink3)}
 
 .sav-block::before{background:linear-gradient(90deg,var(--sav),var(--sav-bd))}
 .sav-top{display:flex;border-bottom:1px solid var(--border)}
@@ -272,12 +279,15 @@ textarea.text-input{resize:vertical;min-height:80px}
         <div class="split-cell ua-cell">
           <div class="b-lbl">やほの支出</div>
           <div class="split-num">¥<span id="amtA">0</span></div>
+          <div class="split-sub">負担額 ¥<span id="shareA">0</span></div>
         </div>
         <div class="split-cell ub-cell">
           <div class="b-lbl">りとちゃの支出</div>
           <div class="split-num">¥<span id="amtB">0</span></div>
+          <div class="split-sub">負担額 ¥<span id="shareB">0</span></div>
         </div>
       </div>
+      <div class="settle-row" id="settleRow"></div>
     </div>
 
     <div class="card">
@@ -628,12 +638,47 @@ function selectSavUser(u){
   }).join('');
 }
 
-// ── MONTH ──
+// ── MONTH (25日締め対応) ──
+// 「N月」の集計期間：前月26日〜当月25日
+function getPeriod(refDate){
+  const y = refDate.getFullYear(), m = refDate.getMonth();
+  const start = new Date(y, m - 1, 26, 0, 0, 0, 0);   // 前月26日
+  const end   = new Date(y, m,     25, 23, 59, 59, 999); // 当月25日
+  return { start, end };
+}
+function inCurrentPeriod(dateStr){
+  const d = new Date(dateStr);
+  const { start, end } = getPeriod(currentMonth);
+  return d >= start && d <= end;
+}
+// レポート用：日付からどの「締め月」に属するか求める
+function closingMonthKey(dateStr){
+  const d = new Date(dateStr);
+  // 26日以降は翌月扱い
+  const month = d.getDate() >= 26
+    ? new Date(d.getFullYear(), d.getMonth() + 1, 1)
+    : new Date(d.getFullYear(), d.getMonth(), 1);
+  return `${month.getFullYear()}-${String(month.getMonth()+1).padStart(2,'0')}`;
+}
 function changeMonth(d){ currentMonth.setMonth(currentMonth.getMonth()+d); updateMonthTitle(); updateExpSummary(); renderWeeklyExp(); renderBreakdown(); renderExpEntries(); }
-function updateMonthTitle(){ document.getElementById('expMonthTitle').textContent=`${currentMonth.getFullYear()}年${currentMonth.getMonth()+1}月`; }
-function mKey(date){ const d=new Date(date); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-function mExpenses(){ return expenses.filter(e=>mKey(e.date)===mKey(currentMonth)); }
-function mSavings(){ return savings.filter(s=>mKey(s.date)===mKey(currentMonth)); }
+function updateMonthTitle(){
+  const { start, end } = getPeriod(currentMonth);
+  const startStr = `${start.getMonth()+1}/${start.getDate()}`;
+  const endStr   = `${end.getMonth()+1}/${end.getDate()}`;
+  document.getElementById('expMonthTitle').textContent=`${currentMonth.getFullYear()}年${currentMonth.getMonth()+1}月`;
+  // サブタイトル（期間）を表示
+  let sub = document.getElementById('expPeriodSub');
+  if(!sub){
+    sub = document.createElement('div');
+    sub.id = 'expPeriodSub';
+    sub.style.cssText = 'font-size:0.62rem;color:var(--ink3);text-align:center;margin-top:2px;font-family:"Outfit",sans-serif';
+    document.getElementById('expMonthTitle').insertAdjacentElement('afterend', sub);
+  }
+  sub.textContent = `${startStr} 〜 ${endStr}`;
+}
+function mKey(date){ return closingMonthKey(date); }
+function mExpenses(){ return expenses.filter(e=>inCurrentPeriod(e.date)); }
+function mSavings(){ return savings.filter(s=>inCurrentPeriod(s.date)); }
 
 // ── ACTIONS ──
 async function addExpense(){
@@ -706,32 +751,55 @@ function updateExpSummary(){
   const remain=budget-total, over=remain<0;
   document.getElementById('totalNum').textContent=total.toLocaleString();
   document.getElementById('amtA').textContent=aT.toLocaleString(); document.getElementById('amtB').textContent=bT.toLocaleString();
+
+  // 負担額（折半）と送金額
+  const half = Math.round(total / 2);
+  document.getElementById('shareA').textContent = half.toLocaleString();
+  document.getElementById('shareB').textContent = half.toLocaleString();
+  const diff = aT - bT; // プラスならAが多く払っている
+  const settle = document.getElementById('settleRow');
+  if(total === 0){
+    settle.innerHTML = '';
+  } else if(Math.abs(diff) < 1){
+    settle.innerHTML = `<div class="settle-chip even">💚 ちょうど折半！</div>`;
+  } else {
+    // 多く払った側に少ない側が送る
+    const sender   = diff > 0 ? 'りとちゃ' : 'やほ';
+    const receiver = diff > 0 ? 'やほ'     : 'りとちゃ';
+    const chipCls  = diff > 0 ? 'send-b'   : 'send-a';
+    const sendAmt  = Math.abs(Math.round(diff / 2));
+    settle.innerHTML = `<span class="settle-chip ${chipCls}">${sender}</span><span class="settle-arrow">→</span><span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.9rem">¥${sendAmt.toLocaleString()}</span><span class="settle-arrow">→</span><span class="settle-chip ${diff>0?'send-a':'send-b'}">${receiver}</span>`;
+  }
   const pf=document.getElementById('budgetProg'), rn=document.getElementById('remainNum');
   pf.style.width=Math.min(100,(total/budget)*100)+'%'; pf.className='prog-fill'+(over?' over':'');
   rn.textContent=over?`−¥${Math.abs(remain).toLocaleString()} オーバー`:`¥${remain.toLocaleString()}`; rn.className='remain-num'+(over?' over':'');
   document.getElementById('budgetSub').textContent=over?`予算超過`:`予算の ${Math.round((total/budget)*100)}% 使用`;
 }
 
-// 週ごとの集計（新規機能）
+// 週ごとの集計（25日締め対応）
 function renderWeeklyExp() {
   const mes = mExpenses();
   if(!mes.length) { document.getElementById('weeklyBreakdown').innerHTML = '<p class="empty">データなし</p>'; return; }
   
-  const y = currentMonth.getFullYear(), m = currentMonth.getMonth();
+  const { start } = getPeriod(currentMonth); // 期間開始は前月26日
   const weeks = {};
   
   mes.forEach(e => {
     const d = new Date(e.date);
-    const dateNum = d.getDate();
-    // 該当月の1日の曜日 (0:日, 1:月... 6:土)
-    const firstDay = new Date(y, m, 1).getDay();
-    // 月曜始まりのオフセット計算
-    const offset = (firstDay === 0 ? 6 : firstDay - 1);
-    const weekNum = Math.floor((dateNum + offset - 1) / 7) + 1;
+    // 期間開始日からの経過日数で週番号を算出（月曜始まりに揃える）
+    const startMon = new Date(start);
+    // 開始日を直近の月曜に合わせる（遡る）
+    const dow = startMon.getDay(); // 0=日
+    const offset = (dow === 0 ? 6 : dow - 1);
+    startMon.setDate(startMon.getDate() - offset);
+    const diffDays = Math.floor((d - startMon) / 86400000);
+    const weekNum = Math.floor(diffDays / 7) + 1;
     weeks[`第${weekNum}週`] = (weeks[`第${weekNum}週`] || 0) + e.amount;
   });
 
-  document.getElementById('weeklyBreakdown').innerHTML = Object.keys(weeks).sort().map(w => `
+  document.getElementById('weeklyBreakdown').innerHTML = Object.keys(weeks).sort((a,b)=>{
+    return parseInt(a.replace(/[^0-9]/g,'')) - parseInt(b.replace(/[^0-9]/g,''));
+  }).map(w => `
     <div class="weekly-row">
       <div class="weekly-lbl">${w}</div>
       <div class="weekly-amt">¥${weeks[w].toLocaleString()}</div>
@@ -744,8 +812,10 @@ function updateSavSummary(){
   const aT=savings.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0);
   const bT=savings.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0);
   const cT=savings.filter(e=>e.user==='common').reduce((s,e)=>s+e.amount,0);
+  const { start, end } = getPeriod(currentMonth);
+  const periodStr = `${start.getMonth()+1}/${start.getDate()}〜${end.getMonth()+1}/${end.getDate()}`;
   document.getElementById('savTotalNum').textContent=`¥${Math.abs(total).toLocaleString()}`; document.getElementById('savTotalNum').className='s-num'+(total<0?' negative':'');
-  document.getElementById('savMonthLbl').textContent=`${currentMonth.getMonth()+1}月の貯金`;
+  document.getElementById('savMonthLbl').textContent=`${currentMonth.getMonth()+1}月の貯金（${periodStr}）`;
   document.getElementById('savMonthNum').textContent=`${mTotal<0?'−':''}¥${Math.abs(mTotal).toLocaleString()}`; document.getElementById('savMonthNum').className='s-num'+(mTotal<0?' negative':'');
   document.getElementById('savAmtA').textContent=aT.toLocaleString();
   document.getElementById('savAmtB').textContent=bT.toLocaleString();
@@ -816,13 +886,16 @@ function renderReport(){
 
   if(rangeVal !== 'all'){
     const months = parseInt(rangeVal);
-    // 今月から数えて指定ヶ月前（1日）
-    const currentStart = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    // 締め月ベースで「months ヶ月前の締め月の開始日」を算出
+    const startRef = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const currentStart = getPeriod(startRef).start;
     currentData = filtered.filter(e => new Date(e.date) >= currentStart);
 
-    // 昨年同期間の計算
-    const prevStart = new Date(currentStart.getFullYear() - 1, currentStart.getMonth(), 1);
-    const prevEnd = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0, 23, 59, 59); // 前年の今月末
+    // 昨年同期間（締め月ベース）
+    const prevStartRef = new Date(startRef.getFullYear() - 1, startRef.getMonth(), 1);
+    const prevStart = getPeriod(prevStartRef).start;
+    const prevEndRef = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    const prevEnd   = getPeriod(prevEndRef).end;
     prevData = filtered.filter(e => {
         const d = new Date(e.date);
         return d >= prevStart && d <= prevEnd;
@@ -894,7 +967,7 @@ function renderReport(){
   }
 
   // Trend Chart
-  const mMap={}; currentData.forEach(e=>{ const k=mKey(e.date); mMap[k]=(mMap[k]||0)+e.amount; });
+  const mMap={}; currentData.forEach(e=>{ const k=closingMonthKey(e.date); mMap[k]=(mMap[k]||0)+e.amount; });
   const months=Object.keys(mMap).sort(); const repTrend=document.getElementById('repTrend');
   if(months.length<2){ repTrend.innerHTML='<p class="empty" style="padding:10px">グラフ表示には2ヶ月以上のデータが必要です</p>'; } else {
     const vals=months.map(k=>mMap[k]), maxV=Math.max(...vals)||1, W=320, H=100;
@@ -904,7 +977,7 @@ function renderReport(){
   }
 
   // Table
-  const tableMonths=[...new Set(currentData.map(e=>mKey(e.date)))].sort().reverse();
+  const tableMonths=[...new Set(currentData.map(e=>closingMonthKey(e.date)))].sort().reverse();
   document.getElementById('repTable').innerHTML=`<thead><tr><th>月</th><th>合計</th><th>${NAMES.A}</th><th>${NAMES.B}</th></tr></thead><tbody>${tableMonths.map(mk=>{
     const me=currentData.filter(e=>mKey(e.date)===mk);
     return `<tr><td>${mk.replace('-','/')}</td><td>¥${me.reduce((s,e)=>s+e.amount,0).toLocaleString()}</td><td>¥${me.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0).toLocaleString()}</td><td>¥${me.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0).toLocaleString()}</td></tr>`;
