@@ -453,7 +453,11 @@ const SAV_NAMES= [{id:'A',lbl:'やほ'},{id:'B',lbl:'りとちゃ'},{id:'common'
 
 // ── STATE ──
 let currentExpUser='A', currentSavUser='A';
-let currentMonth = new Date(); currentMonth.setDate(1);
+// 25日締め：26日以降は翌月扱いで初期表示を決定
+const _today = new Date();
+let currentMonth = _today.getDate() >= 26
+  ? new Date(_today.getFullYear(), _today.getMonth() + 1, 1)
+  : new Date(_today.getFullYear(), _today.getMonth(), 1);
 let expenses = [];
 let savings  = [];
 let selCat='food', selPay='cash', selSavType='cash', selSavSign='plus';
