@@ -261,20 +261,7 @@ textarea.text-input{resize:vertical;min-height:80px}
         <div class="budget-left">
           <div class="b-lbl">今月の合計支出</div>
           <div class="b-num">¥<span id="totalNum">0</span></div>
-          <div class="b-sub" id="budgetSub"></div>
         </div>
-        <div class="budget-right">
-          <div class="b-lbl">月の予算</div>
-          <input type="number" id="budgetInput" value="150000" step="10000" oninput="updateExpSummary()">
-          <div class="b-lbl" style="margin-top:3px">円</div>
-        </div>
-      </div>
-      <div class="remain-row">
-        <div class="remain-labels">
-          <span class="remain-lbl">残り予算</span>
-          <span class="remain-num" id="remainNum">¥0</span>
-        </div>
-        <div class="prog-bar"><div class="prog-fill" id="budgetProg" style="width:0%"></div></div>
       </div>
       <div class="user-split">
         <div class="split-cell ua-cell">
@@ -650,8 +637,8 @@ const FIXED_EXPENSES = [
 ];
 // 指定月の固定費エントリを生成（その月の25日付で作成）
 function fixedForMonth(refDate){
-  const { end } = getPeriod(refDate);
-  const dateISO = end.toISOString(); // 締め日（25日）付
+  const { start } = getPeriod(refDate);
+  const dateISO = start.toISOString(); // 期間開始日（26日）付
   return FIXED_EXPENSES.map(f => ({ ...f, date: dateISO }));
 }
 // 「N月」の集計期間：前月26日〜当月25日
@@ -762,8 +749,6 @@ async function deleteItem(type, id){
 function updateExpSummary(){
   const mes=mExpenses(), total=mes.reduce((s,e)=>s+e.amount,0);
   const aT=mes.filter(e=>e.user==='A').reduce((s,e)=>s+e.amount,0), bT=mes.filter(e=>e.user==='B').reduce((s,e)=>s+e.amount,0);
-  const budget=parseInt(document.getElementById('budgetInput').value)||150000;
-  const remain=budget-total, over=remain<0;
   document.getElementById('totalNum').textContent=total.toLocaleString();
   document.getElementById('amtA').textContent=aT.toLocaleString(); document.getElementById('amtB').textContent=bT.toLocaleString();
 
@@ -785,10 +770,6 @@ function updateExpSummary(){
     const sendAmt  = Math.abs(Math.round(diff / 2));
     settle.innerHTML = `<span class="settle-chip ${chipCls}">${sender}</span><span class="settle-arrow">→</span><span style="font-family:'Outfit',sans-serif;font-weight:700;font-size:0.9rem">¥${sendAmt.toLocaleString()}</span><span class="settle-arrow">→</span><span class="settle-chip ${diff>0?'send-a':'send-b'}">${receiver}</span>`;
   }
-  const pf=document.getElementById('budgetProg'), rn=document.getElementById('remainNum');
-  pf.style.width=Math.min(100,(total/budget)*100)+'%'; pf.className='prog-fill'+(over?' over':'');
-  rn.textContent=over?`−¥${Math.abs(remain).toLocaleString()} オーバー`:`¥${remain.toLocaleString()}`; rn.className='remain-num'+(over?' over':'');
-  document.getElementById('budgetSub').textContent=over?`予算超過`:`予算の ${Math.round((total/budget)*100)}% 使用`;
 }
 
 // 週ごとの集計（25日締め対応）
