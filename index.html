@@ -138,6 +138,7 @@ main{max-width:560px;margin:0 auto;padding:20px 16px 80px;position:relative;z-in
 .e-utag.ua{background:var(--a-bg);color:var(--a-tx)} .e-utag.ub{background:var(--b-bg);color:var(--b-tx)} .e-utag.uc{background:var(--sav-bg);color:var(--sav-tx)}
 .e-del{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:0.78rem;padding:4px 5px;border-radius:7px;transition:all 0.18s;flex-shrink:0}
 .e-del:hover{color:#c04060;background:#fce8ee}
+.e-fixed-badge{font-size:0.6rem;font-weight:700;font-family:'Outfit',sans-serif;padding:3px 7px;border-radius:20px;background:var(--accent-bg);color:var(--accent-dk);border:1px solid var(--sel-bd);white-space:nowrap;align-self:center;flex-shrink:0}
 
 /* REPORT TAB */
 .filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
@@ -642,7 +643,17 @@ function selectSavUser(u){
   }).join('');
 }
 
-// ── MONTH (25日締め対応) ──
+// ── 固定費（常に当月分として計上） ──
+const FIXED_EXPENSES = [
+  { id: 'fixed_rent',  amount: 67000, category: 'rent',    payment: 'credit', memo: '家賃（固定）',   user: 'B' },
+  { id: 'fixed_wifi',  amount:  4400, category: 'utility', payment: 'credit', memo: 'Wi-Fi（固定）',  user: 'B' },
+];
+// 指定月の固定費エントリを生成（その月の25日付で作成）
+function fixedForMonth(refDate){
+  const { end } = getPeriod(refDate);
+  const dateISO = end.toISOString(); // 締め日（25日）付
+  return FIXED_EXPENSES.map(f => ({ ...f, date: dateISO }));
+}
 // 「N月」の集計期間：前月26日〜当月25日
 function getPeriod(refDate){
   const y = refDate.getFullYear(), m = refDate.getMonth();
@@ -681,7 +692,7 @@ function updateMonthTitle(){
   sub.textContent = `${startStr} 〜 ${endStr}`;
 }
 function mKey(date){ return closingMonthKey(date); }
-function mExpenses(){ return expenses.filter(e=>inCurrentPeriod(e.date)); }
+function mExpenses(){ return [...expenses.filter(e=>inCurrentPeriod(e.date)), ...fixedForMonth(currentMonth)]; }
 function mSavings(){ return savings.filter(s=>inCurrentPeriod(s.date)); }
 
 // ── ACTIONS ──
@@ -836,7 +847,9 @@ function renderExpEntries(){
   });
   list.innerHTML=Object.entries(g).map(([date,items])=>`<div class="date-grp"><div class="date-lbl">${date}</div>${items.map(e=>{
     const cat=CATS.find(c=>c.id===e.category)||CATS[8], pay=PAYS.find(p=>p.id===e.payment)||PAYS[0];
-    return `<div class="entry-item"><div class="e-dot" style="background:${cat.color}"></div><div class="e-info"><div class="e-name">${cat.lbl}</div><div class="e-meta"><span class="e-tag">${pay.lbl}</span> ${e.memo}</div></div><div class="e-right"><div class="e-amount">¥${e.amount.toLocaleString()}</div><div class="e-utag ${e.user==='A'?'ua':'ub'}">${NAMES[e.user]}</div></div><button class="e-del" onclick="deleteItem('exp',${e.id})">✕</button></div>`;
+    const isFixed = typeof e.id === 'string' && e.id.startsWith('fixed_');
+    const delBtn = isFixed ? `<span class="e-fixed-badge">固定</span>` : `<button class="e-del" onclick="deleteItem('exp',${e.id})">✕</button>`;
+    return `<div class="entry-item"><div class="e-dot" style="background:${cat.color}"></div><div class="e-info"><div class="e-name">${cat.lbl}</div><div class="e-meta"><span class="e-tag">${pay.lbl}</span> ${e.memo}</div></div><div class="e-right"><div class="e-amount">¥${e.amount.toLocaleString()}</div><div class="e-utag ${e.user==='A'?'ua':'ub'}">${NAMES[e.user]}</div></div>${delBtn}</div>`;
   }).join('')}</div>`).join('');
 }
 
